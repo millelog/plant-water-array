@@ -1,10 +1,20 @@
 # main.py
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from routers import devices, sensors, readings, alerts
 from database import init_db
 
 app = FastAPI()
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Add your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(devices.router)
 app.include_router(sensors.router)
