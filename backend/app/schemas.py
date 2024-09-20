@@ -27,7 +27,7 @@ class User(UserBase):
     is_active: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Device schemas
 class DeviceBase(BaseModel):
@@ -47,7 +47,7 @@ class Device(DeviceBase):
     owner_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Sensor schemas
 class SensorBase(BaseModel):
@@ -66,7 +66,7 @@ class Sensor(SensorBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Plant schemas
 class PlantBase(BaseModel):
@@ -94,7 +94,7 @@ class Plant(PlantBase):
     zone_id: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # MoistureReading schemas
 class MoistureReadingBase(BaseModel):
@@ -109,7 +109,7 @@ class MoistureReading(MoistureReadingBase):
     sensor_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # WateringEvent schemas
 class WateringEventBase(BaseModel):
@@ -126,7 +126,7 @@ class WateringEvent(WateringEventBase):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # WateringSchedule schemas
 class WateringScheduleBase(BaseModel):
@@ -149,7 +149,7 @@ class WateringSchedule(WateringScheduleBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Zone schemas
 class ZoneBase(BaseModel):
@@ -167,7 +167,7 @@ class Zone(ZoneBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Alert schemas
 class AlertBase(BaseModel):
@@ -190,4 +190,4 @@ class Alert(AlertBase):
     is_resolved: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
