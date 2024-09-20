@@ -9,16 +9,16 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 import models
-import schemas
+import backend.app.schemas as schemas
 from db import get_db
 
 # to get a string like this run:
 # openssl rand -hex 32
 
 
-SECRET_KEY = os.getenv("API_SECRET_KEY")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

@@ -1,20 +1,21 @@
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from db import engine
-import models
-import dotenv
-from routes import users, devices, plants, sensors, watering, zones, alerts
-from db import get_db
-import schemas
-from auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
-from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, FastAPI
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from datetime import timedelta
+import dotenv
+
+# Use relative imports
+import models
+from db import get_db, engine
+import schemas
+from auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from routes import users, devices, plants, sensors, watering, zones, alerts
+
+dotenv.load_dotenv()
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
-dotenv.load_dotenv()
 
 app = FastAPI(title="Plant Water Array API")
 
@@ -52,6 +53,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+app.include_router(router)
 
 @app.get("/")
 async def root():

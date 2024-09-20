@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import models
-import schemas
+import backend.app.schemas as schemas
 from typing import List
 
 class DataProcessor:
