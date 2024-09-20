@@ -12,3 +12,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
+def init_db():
+    import models  # Import here to avoid circular imports
+    Base.metadata.create_all(bind=engine)
