@@ -9,6 +9,7 @@ export async function getDevices(): Promise<Device[]> {
 }
 
 export async function createDevice(device: DeviceCreate): Promise<Device> {
+  console.log('Sending device data:', device);
   const response = await axios.post(`${API_BASE_URL}/devices/`, device);
   return response.data;
 }

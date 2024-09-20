@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { getSensors, createSensor } from '../api/api';
+import { getSensors, createSensor, getDevices } from '../api/api';
 import DataTable from '../components/DataTable';
-import { Sensor, SensorCreate } from '../types';
+import { Sensor, SensorCreate, Device } from '../types';
 
 const Sensors: React.FC = () => {
   const [sensors, setSensors] = useState<Sensor[]>([]);
-  const [newSensor, setNewSensor] = useState<SensorCreate>({
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [newSensor, setNewSensor] = useState<Omit<SensorCreate, 'sensor_id'>>({
     device_id: 0,
-    sensor_id: 0,
     name: '',
   });
 
   useEffect(() => {
     fetchSensors();
+    fetchDevices();
   }, []);
 
   async function fetchSensors() {
@@ -20,10 +21,15 @@ const Sensors: React.FC = () => {
     setSensors(sensorsData);
   }
 
+  async function fetchDevices() {
+    const devicesData = await getDevices();
+    setDevices(devicesData);
+  }
+
   async function handleCreateSensor(e: React.FormEvent) {
     e.preventDefault();
     await createSensor(newSensor);
-    setNewSensor({ device_id: 0, sensor_id: 0, name: '' });
+    setNewSensor({ device_id: 0, name: '' });
     fetchSensors();
   }
 
@@ -42,7 +48,7 @@ const Sensors: React.FC = () => {
     {
       Header: 'Actions',
       accessor: 'actions',
-      Cell: (row: Sensor) => (
+      Cell: () => (
         <button className="text-blue-600 hover:underline">Set Threshold</button>
       ),
     },
@@ -53,26 +59,21 @@ const Sensors: React.FC = () => {
       <h1 className="text-2xl font-bold mb-4">Sensors</h1>
       <form className="mb-4" onSubmit={handleCreateSensor}>
         <div className="flex space-x-2">
-          <input
-            type="number"
-            placeholder="Device ID"
+          <select
             value={newSensor.device_id}
             onChange={(e) =>
               setNewSensor({ ...newSensor, device_id: Number(e.target.value) })
             }
             className="border p-2 flex-1"
             required
-          />
-          <input
-            type="number"
-            placeholder="Sensor ID"
-            value={newSensor.sensor_id}
-            onChange={(e) =>
-              setNewSensor({ ...newSensor, sensor_id: Number(e.target.value) })
-            }
-            className="border p-2 flex-1"
-            required
-          />
+          >
+            <option value="">Select Device</option>
+            {devices.map((device) => (
+              <option key={device.id} value={device.id}>
+                {device.name}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             placeholder="Name"

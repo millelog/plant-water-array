@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 import schemas, crud
 from database import SessionLocal
 from typing import List
+import models
 
 router = APIRouter(
     prefix="/alerts",

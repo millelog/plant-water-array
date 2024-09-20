@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 import schemas, crud
 from database import SessionLocal
 from typing import List
+import models
 
 router = APIRouter(
     prefix="/sensors",
@@ -17,12 +18,13 @@ def get_db():
         yield db
     finally:
         db.close()
+        
+@router.get("/", response_model=List[schemas.Sensor])
+def read_sensors(db: Session = Depends(get_db)):
+    return crud.get_sensors(db)
 
 @router.post("/", response_model=schemas.Sensor)
 def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db)):
-    db_sensor = crud.get_sensor_by_sensor_id(db, device_id=sensor.device_id, sensor_id=sensor.sensor_id)
-    if db_sensor:
-        raise HTTPException(status_code=400, detail="Sensor already registered")
     return crud.create_sensor(db=db, sensor=sensor)
 
 @router.get("/{sensor_id}", response_model=schemas.Sensor)

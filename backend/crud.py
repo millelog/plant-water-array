@@ -3,6 +3,9 @@
 from sqlalchemy.orm import Session
 import models, schemas
 from datetime import datetime
+from sqlalchemy import func
+import uuid
+import logging
 
 def get_device_by_device_id(db: Session, device_id: str):
     return db.query(models.Device).filter(models.Device.device_id == device_id).first()
@@ -14,6 +17,9 @@ def create_device(db: Session, device: schemas.DeviceCreate):
     db.refresh(db_device)
     return db_device
 
+def get_sensors(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Sensor).offset(skip).limit(limit).all()
+
 def get_sensor_by_sensor_id(db: Session, device_id: int, sensor_id: int):
     return db.query(models.Sensor).filter(
         models.Sensor.device_id == device_id,
@@ -21,9 +27,15 @@ def get_sensor_by_sensor_id(db: Session, device_id: int, sensor_id: int):
     ).first()
 
 def create_sensor(db: Session, sensor: schemas.SensorCreate):
+    # Get the highest existing sensor_id for the given device
+    max_sensor_id = db.query(func.max(models.Sensor.sensor_id)).filter(models.Sensor.device_id == sensor.device_id).scalar() or 0
+    
+    # Increment the sensor_id
+    new_sensor_id = max_sensor_id + 1
+    
     db_sensor = models.Sensor(
         device_id=sensor.device_id,
-        sensor_id=sensor.sensor_id,
+        sensor_id=new_sensor_id,
         name=sensor.name
     )
     db.add(db_sensor)

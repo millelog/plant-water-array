@@ -37,8 +37,9 @@ class SensorBase(BaseModel):
     sensor_id: int
     name: Optional[str] = None
 
-class SensorCreate(SensorBase):
+class SensorCreate(BaseModel):
     device_id: int
+    name: str
 
 class Sensor(SensorBase):
     id: int
@@ -48,15 +49,14 @@ class Sensor(SensorBase):
     class Config:
         orm_mode = True
 
-class DeviceBase(BaseModel):
-    device_id: str
-    name: Optional[str] = None
+class DeviceCreate(BaseModel):
+    name: str
+    device_id: str  # This will store the unique identifier from the ESP32
 
-class DeviceCreate(DeviceBase):
-    pass
-
-class Device(DeviceBase):
+class Device(BaseModel):
     id: int
+    device_id: str
+    name: str
     sensors: List[Sensor] = []
 
     class Config:

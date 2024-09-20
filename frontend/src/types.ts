@@ -3,13 +3,13 @@
 export interface Device {
     id: number;
     device_id: string;
-    name?: string;
+    name: string;
     sensors: Sensor[];
   }
   
   export interface DeviceCreate {
+    name: string;
     device_id: string;
-    name?: string;
   }
   
   export interface Sensor {
@@ -23,7 +23,6 @@ export interface Device {
   
   export interface SensorCreate {
     device_id: number;
-    sensor_id: number;
     name?: string;
   }
   
@@ -48,4 +47,3 @@ export interface Device {
     timestamp: string;
     read: boolean;
   }
-  
