@@ -2,9 +2,9 @@
 export default {
   content: [
     './index.html',
-    './src/**/*.{js,jsx}',
-    './src/**/**/*.{js,jsx}',
-    './node_modules/@shadcn/ui/components/**/*.{js,jsx}',
+    './src/**/*.{ts,tsx}',
+    './src/**/**/*.{ts,tsx}',
+    './node_modules/@shadcn/ui/components/**/*.{ts,tsx}',
   ],
   theme: {
     extend: {},

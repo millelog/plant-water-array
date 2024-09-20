@@ -40,3 +40,31 @@ api/: API utility functions for interacting with the backend.
 components/: Reusable UI components.
 pages/: Different pages/routes of the application.
 routes.jsx: Defines the routing for the application.
+
+
+##Running the Frontend
+Navigate to the frontend directory:
+```
+bash
+cd frontend
+```
+Install Dependencies:
+
+If you haven't already installed the dependencies during setup:
+```
+bash
+npm install
+```
+Run the Application:
+```
+bash
+npm run dev
+```
+Access the Frontend:
+
+Open your browser and navigate to:
+```
+arduino
+http://localhost:5173
+```
+(Vite's default port is 5173)
