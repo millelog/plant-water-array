@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { getDevices, createDevice } from '../api/api';
 import DataTable from '../components/DataTable';
+import DeviceSetupInstructions from '../components/DeviceSetupInstructions';
 import { Device, DeviceCreate } from '../types';
 
 const Devices: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [newDevice, setNewDevice] = useState<DeviceCreate>({
-    device_id: '',
     name: '',
+    device_id: '',
   });
+  const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
     fetchDevices();
@@ -21,8 +23,9 @@ const Devices: React.FC = () => {
 
   async function handleCreateDevice(e: React.FormEvent) {
     e.preventDefault();
+    console.log('Submitting new device:', newDevice);
     await createDevice(newDevice);
-    setNewDevice({ device_id: '', name: '' });
+    setNewDevice({ name: '', device_id: '' });
     fetchDevices();
   }
 
@@ -41,6 +44,13 @@ const Devices: React.FC = () => {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Devices</h1>
+      <button
+        onClick={() => setShowInstructions(!showInstructions)}
+        className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
+      >
+        {showInstructions ? 'Hide' : 'Show'} Setup Instructions
+      </button>
+      {showInstructions && <DeviceSetupInstructions />}
       <form className="mb-4" onSubmit={handleCreateDevice}>
         <div className="flex space-x-2">
           <input
@@ -61,6 +71,7 @@ const Devices: React.FC = () => {
               setNewDevice({ ...newDevice, name: e.target.value })
             }
             className="border p-2 flex-1"
+            required
           />
           <button
             type="submit"

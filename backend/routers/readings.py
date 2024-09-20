@@ -6,6 +6,7 @@ import schemas, crud, models
 from database import SessionLocal
 from typing import List
 from datetime import datetime
+import models
 
 router = APIRouter(
     prefix="/readings",
