@@ -30,11 +30,13 @@ class Reading(Base):
     __tablename__ = "readings"
 
     id = Column(Integer, primary_key=True, index=True)
+    device_id = Column(String, ForeignKey("devices.device_id"))
     sensor_id = Column(Integer, ForeignKey("sensors.id"))
     timestamp = Column(DateTime, default=datetime.utcnow)
     moisture = Column(Float)
 
     sensor = relationship("Sensor", back_populates="readings")
+    device = relationship("Device")
 
 class Threshold(Base):
     __tablename__ = "thresholds"

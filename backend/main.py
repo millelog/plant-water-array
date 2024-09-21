@@ -11,7 +11,7 @@ init_db()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Add your frontend URL
+    allow_origins=['*'],  # Add your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -21,3 +21,8 @@ app.include_router(devices.router)
 app.include_router(sensors.router)
 app.include_router(readings.router)
 app.include_router(alerts.router)
+
+@app.get("/ping")
+async def ping():
+    return {"message": "pong"}
+
