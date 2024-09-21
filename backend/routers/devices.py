@@ -27,7 +27,10 @@ def create_device(device: schemas.DeviceCreate, db: Session = Depends(get_db)):
 
 @router.post("/register_device", response_model=schemas.Device)
 async def register_device(device: schemas.DeviceCreate, db: Session = Depends(get_db)):
-    return create_device(device, db)
+    existing_device = crud.get_device_by_name(db, device.name)
+    if existing_device:
+        return existing_device
+    return crud.create_device(db, device)
 
 
 @router.get("/", response_model=List[schemas.Device])
@@ -35,3 +38,4 @@ async def register_device(device: schemas.DeviceCreate, db: Session = Depends(ge
 def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     devices = db.query(models.Device).offset(skip).limit(limit).all()
     return devices
+

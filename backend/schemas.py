@@ -7,17 +7,19 @@ from typing import Optional, List
 class ReadingBase(BaseModel):
     moisture: float
 
-class ReadingCreate(ReadingBase):
+class ReadingCreate(BaseModel):
     device_id: str
     sensor_id: int
+    moisture: float
 
 class Reading(ReadingBase):
     id: int
+    device_id: str
     sensor_id: int
     timestamp: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ThresholdBase(BaseModel):
     min_moisture: Optional[float] = None
@@ -31,7 +33,7 @@ class Threshold(ThresholdBase):
     sensor_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class SensorBase(BaseModel):
     sensor_id: int
@@ -47,11 +49,10 @@ class Sensor(SensorBase):
     threshold: Optional[Threshold] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class DeviceCreate(BaseModel):
     name: str
-    device_id: str  # This will store the unique identifier from the ESP32
 
 class Device(BaseModel):
     id: int
@@ -60,7 +61,7 @@ class Device(BaseModel):
     sensors: List[Sensor] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class AlertBase(BaseModel):
     message: str
@@ -75,4 +76,4 @@ class Alert(AlertBase):
     read: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True

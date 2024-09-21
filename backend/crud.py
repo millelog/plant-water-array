@@ -10,8 +10,12 @@ import logging
 def get_device_by_device_id(db: Session, device_id: str):
     return db.query(models.Device).filter(models.Device.device_id == device_id).first()
 
+def get_device_by_name(db: Session, name: str):
+    return db.query(models.Device).filter(models.Device.name == name).first()
+
 def create_device(db: Session, device: schemas.DeviceCreate):
-    db_device = models.Device(device_id=device.device_id, name=device.name)
+    device_id = str(uuid.uuid4())  # Generate a unique device_id
+    db_device = models.Device(device_id=device_id, name=device.name)
     db.add(db_device)
     db.commit()
     db.refresh(db_device)
@@ -44,8 +48,17 @@ def create_sensor(db: Session, sensor: schemas.SensorCreate):
     return db_sensor
 
 def create_reading(db: Session, reading: schemas.ReadingCreate):
+    db_device = get_device_by_device_id(db, device_id=reading.device_id)
+    if not db_device:
+        raise ValueError("Device not found")
+    
+    db_sensor = get_sensor_by_sensor_id(db, device_id=db_device.id, sensor_id=reading.sensor_id)
+    if not db_sensor:
+        db_sensor = create_sensor(db, schemas.SensorCreate(device_id=db_device.id, sensor_id=reading.sensor_id))
+
     db_reading = models.Reading(
-        sensor_id=reading.sensor_id,
+        device_id=reading.device_id,
+        sensor_id=db_sensor.id,
         moisture=reading.moisture,
         timestamp=datetime.utcnow()
     )
@@ -69,8 +82,8 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
 def get_readings(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Reading).offset(skip).limit(limit).all()
 
-def get_readings_by_sensor(db: Session, sensor_id: int, start_time: datetime = None, end_time: datetime = None):
-    query = db.query(models.Reading).filter(models.Reading.sensor_id == sensor_id)
+def get_readings_by_sensor(db: Session, device_id: str, sensor_id: int, start_time: datetime = None, end_time: datetime = None):
+    query = db.query(models.Reading).filter(models.Reading.device_id == device_id, models.Reading.sensor_id == sensor_id)
     if start_time:
         query = query.filter(models.Reading.timestamp >= start_time)
     if end_time:
