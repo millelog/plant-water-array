@@ -1,7 +1,7 @@
-import network
-import ubinascii
-import urequests
-import machine
+import network  # type: ignore
+import ubinascii  # type: ignore
+import urequests  # type: ignore
+import machine  # type: ignore
 import time
 import random
 
@@ -10,7 +10,7 @@ WIFI_SSID = "Pretty Fly for a Wifi"
 WIFI_PASSWORD = "All the girlies say"
 SERVER_URL = "http://192.168.70.101:8000"  # Replace with your actual server URL
 DEVICE_NAME = "TestDevice"
-READING_INTERVAL = 10  # 5 minutes in seconds
+READING_INTERVAL = 10  # 10 seconds
 
 def connect_wifi():
     sta_if = network.WLAN(network.STA_IF)
@@ -65,19 +65,47 @@ def register_with_server():
         print("Error registering device:", str(e))
         return None
 
-def send_moisture_reading(device_id):
+def recognize_sensors():
+    # Simulate sensor recognition
+    # In a real scenario, this function would interact with actual hardware
+    num_sensors = random.randint(1, 3)  # Simulate 1 to 3 sensors
+    sensors = [f"Sensor_{i+1}" for i in range(num_sensors)]
+    print(f"Recognized {num_sensors} sensors: {', '.join(sensors)}")
+    return sensors
+
+def register_sensor(device_id, sensor_name):
+    data = {
+        "device_id": device_id,
+        "name": sensor_name
+    }
+    try:
+        response = urequests.post(SERVER_URL + "/sensors/", json=data)
+        if response.status_code == 200:
+            sensor_info = response.json()
+            print(f"Sensor {sensor_name} registered successfully. Sensor ID:", sensor_info.get('id'))
+            response.close()
+            return sensor_info.get('id')
+        else:
+            print(f"Error registering sensor {sensor_name}. Status code: {response.status_code}")
+            response.close()
+            return None
+    except Exception as e:
+        print(f"Error registering sensor {sensor_name}:", str(e))
+        return None
+
+def send_moisture_reading(device_id, sensor_id):
     moisture = random.uniform(0, 100)  # Generate random moisture value between 0 and 100
     data = {
         "device_id": device_id,
-        "sensor_id": 1,  # Assuming a single sensor per device
+        "sensor_id": sensor_id,
         "moisture": moisture
     }
     try:
         response = urequests.post(SERVER_URL + "/readings/", json=data)
-        print("Moisture reading sent. Server response:", response.text)
+        print(f"Moisture reading sent for sensor {sensor_id}. Server response:", response.text)
         response.close()
     except Exception as e:
-        print("Error sending moisture reading:", str(e))
+        print(f"Error sending moisture reading for sensor {sensor_id}:", str(e))
 
 def main():
     connect_wifi()
@@ -87,11 +115,19 @@ def main():
         if ping_server():
             device_id = register_with_server()
             if device_id:
+                sensors = recognize_sensors()
+                registered_sensors = []
+                for sensor in sensors:
+                    sensor_id = register_sensor(device_id, sensor)
+                    if sensor_id:
+                        registered_sensors.append(sensor_id)
+                
                 last_reading_time = 0
                 while True:
                     current_time = time.time()
                     if current_time - last_reading_time >= READING_INTERVAL:
-                        send_moisture_reading(device_id)
+                        for sensor_id in registered_sensors:
+                            send_moisture_reading(device_id, sensor_id)
                         last_reading_time = current_time
                     
                     # Add a small delay to prevent tight looping
@@ -103,7 +139,7 @@ def main():
     else:
         print("WiFi connection failed. Exiting.")
 
-if __name__ == "main":
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:

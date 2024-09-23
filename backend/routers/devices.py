@@ -34,7 +34,6 @@ async def register_device(device: schemas.DeviceCreate, db: Session = Depends(ge
 
 
 @router.get("/", response_model=List[schemas.Device])
-
 def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     devices = db.query(models.Device).offset(skip).limit(limit).all()
     return devices

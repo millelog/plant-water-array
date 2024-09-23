@@ -1,6 +1,6 @@
 # crud.py
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 import models, schemas
 from datetime import datetime
 from sqlalchemy import func
@@ -14,32 +14,37 @@ def get_device_by_name(db: Session, name: str):
     return db.query(models.Device).filter(models.Device.name == name).first()
 
 def create_device(db: Session, device: schemas.DeviceCreate):
-    device_id = str(uuid.uuid4())  # Generate a unique device_id
-    db_device = models.Device(device_id=device_id, name=device.name)
+    db_device = models.Device(device_id=device.device_id, name=device.name)
     db.add(db_device)
     db.commit()
     db.refresh(db_device)
     return db_device
 
 def get_sensors(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Sensor).offset(skip).limit(limit).all()
+    return db.query(models.Sensor).options(joinedload(models.Sensor.device)).offset(skip).limit(limit).all()
 
 def get_sensor_by_sensor_id(db: Session, device_id: int, sensor_id: int):
     return db.query(models.Sensor).filter(
         models.Sensor.device_id == device_id,
         models.Sensor.sensor_id == sensor_id
     ).first()
+    
+def get_sensors_by_device_id(db: Session, device_id: str):
+    return db.query(models.Sensor).join(models.Device).filter(models.Device.device_id == device_id).all()
+
+def update_sensor(db: Session, sensor_id: int, sensor_update: schemas.SensorUpdate):
+    db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
+    if db_sensor:
+        for key, value in sensor_update.dict(exclude_unset=True).items():
+            setattr(db_sensor, key, value)
+        db.commit()
+        db.refresh(db_sensor)
+    return db_sensor
 
 def create_sensor(db: Session, sensor: schemas.SensorCreate):
-    # Get the highest existing sensor_id for the given device
-    max_sensor_id = db.query(func.max(models.Sensor.sensor_id)).filter(models.Sensor.device_id == sensor.device_id).scalar() or 0
-    
-    # Increment the sensor_id
-    new_sensor_id = max_sensor_id + 1
-    
     db_sensor = models.Sensor(
         device_id=sensor.device_id,
-        sensor_id=new_sensor_id,
+        sensor_id=sensor.sensor_id,
         name=sensor.name
     )
     db.add(db_sensor)
@@ -82,13 +87,13 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
 def get_readings(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Reading).offset(skip).limit(limit).all()
 
-def get_readings_by_sensor(db: Session, device_id: str, sensor_id: int, start_time: datetime = None, end_time: datetime = None):
+def get_readings_by_sensor(db: Session, device_id: str, sensor_id: int, start_time: datetime = None, end_time: datetime = None, skip: int = 0, limit: int = 100):
     query = db.query(models.Reading).filter(models.Reading.device_id == device_id, models.Reading.sensor_id == sensor_id)
     if start_time:
         query = query.filter(models.Reading.timestamp >= start_time)
     if end_time:
         query = query.filter(models.Reading.timestamp <= end_time)
-    return query.all()
+    return query.offset(skip).limit(limit).all()
 
 def create_alert(db: Session, alert: schemas.AlertCreate):
     db_alert = models.Alert(
