@@ -41,7 +41,15 @@ class SensorBase(BaseModel):
 
 class SensorCreate(BaseModel):
     device_id: int
+    sensor_id: int
     name: str
+
+class SensorUpdate(BaseModel):
+    sensor_id: Optional[int] = None
+    name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class Sensor(SensorBase):
     id: int
@@ -51,8 +59,11 @@ class Sensor(SensorBase):
     class Config:
         from_attributes = True
 
+
+
 class DeviceCreate(BaseModel):
     name: str
+    device_id: str
 
 class Device(BaseModel):
     id: int
