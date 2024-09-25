@@ -14,6 +14,8 @@ const AppRoutes: React.FC = () => {
       <Route path="/devices" element={<Devices />} />
       <Route path="/sensors" element={<Sensors />} />
       <Route path="/readings" element={<Readings />} />
+      <Route path="/readings/:deviceId" element={<Readings />} />
+      <Route path="/readings/:deviceId/:sensorId" element={<Readings />} />
       <Route path="/alerts" element={<Alerts />} />
       <Route path="/settings" element={<Settings />} />
     </Routes>
