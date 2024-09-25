@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 
 interface Column {
   Header: string;
   accessor: string;
-  Cell?: (row: any) => React.ReactNode;
+  Cell?: (props: { value: any }) => React.ReactNode;
 }
 
 interface DataTableProps {
@@ -13,6 +12,7 @@ interface DataTableProps {
 }
 
 const DataTable: React.FC<DataTableProps> = ({ columns, data }) => {
+
   return (
     <div className="overflow-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -31,11 +31,14 @@ const DataTable: React.FC<DataTableProps> = ({ columns, data }) => {
         <tbody className="bg-white divide-y divide-gray-200">
           {data.map((row, idx) => (
             <tr key={idx}>
-              {columns.map((col) => (
-                <td key={col.accessor} className="px-6 py-4 whitespace-nowrap">
-                  {col.Cell ? col.Cell(row) : row[col.accessor]}
-                </td>
-              ))}
+              {columns.map((col) => {
+                const cellValue = row[col.accessor];
+                return (
+                  <td key={col.accessor} className="px-6 py-4 whitespace-nowrap">
+                    {col.Cell ? col.Cell({ value: cellValue }) : cellValue}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
