@@ -7,13 +7,25 @@ interface SensorReadingsGraphProps {
 }
 
 const SensorReadingsGraph: React.FC<SensorReadingsGraphProps> = ({ readings }) => {
-  const data = readings.map(reading => ({
-    timestamp: new Date(reading.timestamp).toLocaleString(),
-    moisture: reading.moisture
-  }));
+  const data = readings.map(reading => {
+    let formattedTimestamp = 'Invalid Date';
+    try {
+      if (reading.timestamp) {
+        const timestampWithoutMicroseconds = reading.timestamp.replace(/\.\d+/, '');
+        formattedTimestamp = new Date(timestampWithoutMicroseconds).toLocaleString();
+      }
+    } catch (error) {
+      console.error('Error parsing date:', error);
+    }
+    return {
+      timestamp: formattedTimestamp,
+      moisture: reading.moisture
+    };
+  });
 
-  const maxMoisture = Math.max(...readings.map(r => r.moisture));
-  const minMoisture = Math.min(...readings.map(r => r.moisture));
+  const validMoistureReadings = readings.filter(r => typeof r.moisture === 'number' && !isNaN(r.moisture));
+  const maxMoisture = validMoistureReadings.length > 0 ? Math.max(...validMoistureReadings.map(r => r.moisture)) : 0;
+  const minMoisture = validMoistureReadings.length > 0 ? Math.min(...validMoistureReadings.map(r => r.moisture)) : 0;
 
   return (
     <div className="w-full h-64 bg-gray-100 relative">

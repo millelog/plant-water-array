@@ -87,13 +87,18 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
 def get_readings(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Reading).offset(skip).limit(limit).all()
 
-def get_readings_by_sensor(db: Session, device_id: str, sensor_id: int, start_time: datetime = None, end_time: datetime = None, skip: int = 0, limit: int = 100):
+def get_readings_by_sensor(db: Session, device_id: str, sensor_id: int, start_time: datetime = None, end_time: datetime = None, skip: int = 0, limit: int = None):
+    logging.info(f"Fetching readings for device_id: {device_id}, sensor_id: {sensor_id}, limit: {limit}")
     query = db.query(models.Reading).filter(models.Reading.device_id == device_id, models.Reading.sensor_id == sensor_id)
     if start_time:
         query = query.filter(models.Reading.timestamp >= start_time)
     if end_time:
         query = query.filter(models.Reading.timestamp <= end_time)
-    return query.offset(skip).limit(limit).all()
+    if limit is not None:
+        query = query.limit(limit)
+    readings = query.offset(skip).all()
+    logging.info(f"Found {len(readings)} readings")
+    return readings
 
 def create_alert(db: Session, alert: schemas.AlertCreate):
     db_alert = models.Alert(
