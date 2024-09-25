@@ -37,22 +37,6 @@ const Readings: React.FC = () => {
   }, [urlSensorId]);
 
 
-
-  const fetchReadings = useCallback(async (deviceId: string, sensorId: number) => {
-    try {
-      const readingsData = await getReadings(deviceId, sensorId);
-      console.log('Fetched readings:', readingsData);
-      // Ensure timestamps are strings
-      const formattedReadings = readingsData.map(reading => ({
-        ...reading,
-        timestamp: reading.timestamp.toString()
-      }));
-      setReadings(formattedReadings);
-    } catch (err) {
-      setError('Failed to fetch readings');
-    }
-  }, []);
-
   useEffect(() => {
     fetchDevices();
   }, [fetchDevices]);
@@ -62,6 +46,23 @@ const Readings: React.FC = () => {
       fetchSensors(selectedDeviceId);
     }
   }, [selectedDeviceId, fetchSensors]);
+
+  const fetchReadings = useCallback(async (deviceId: string, sensorId: number) => {
+    try {
+      const readingsData = await getReadings(deviceId, sensorId);
+      // Ensure timestamps are strings and log each reading
+      const formattedReadings = readingsData.map(reading => {
+        const formattedReading = {
+          ...reading,
+          timestamp: reading.timestamp.toString()
+        };
+        return formattedReading;
+      });
+      setReadings(formattedReadings);
+    } catch (err) {
+      setError('Failed to fetch readings');
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedDeviceId && selectedSensorId !== null) {
@@ -105,7 +106,8 @@ const Readings: React.FC = () => {
     },
   ], []);
 
-  console.log('Readings data passed to DataTable:', readings);
+
+
 
   return (
     <div className="space-y-6">
