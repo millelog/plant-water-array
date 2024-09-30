@@ -27,10 +27,10 @@ async def create_reading(reading: schemas.ReadingCreate, db: Session = Depends(g
     if db_device is None:
         raise HTTPException(status_code=404, detail="Device not found")
     
-    db_sensor = crud.get_sensor_by_sensor_id(db, device_id=db_device.id, sensor_id=reading.sensor_id)
+    db_sensor = crud.get_sensor_by_sensor_id(db, device_id=reading.device_id, sensor_id=reading.sensor_id)
     if db_sensor is None:
         # Create the sensor if not found
-        db_sensor = crud.create_sensor(db, schemas.SensorCreate(device_id=db_device.id, sensor_id=reading.sensor_id))
+        db_sensor = crud.create_sensor(db, schemas.SensorCreate(device_id=reading.device_id, sensor_id=reading.sensor_id))
     
     # Create the reading
     return crud.create_reading(db=db, reading=reading)
@@ -65,7 +65,7 @@ async def read_readings_by_device_and_sensor(
             raise HTTPException(status_code=404, detail=f"Device with id {device_id} not found")
 
         # Check if the sensor exists
-        db_sensor = crud.get_sensor_by_sensor_id(db, device_id=db_device.id, sensor_id=sensor_id)
+        db_sensor = crud.get_sensor_by_sensor_id(db, device_id=device_id, sensor_id=sensor_id)
         if db_sensor is None:
             raise HTTPException(status_code=404, detail=f"Sensor with id {sensor_id} not found for device {device_id}")
 

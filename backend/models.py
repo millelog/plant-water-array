@@ -19,7 +19,7 @@ class Sensor(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     sensor_id = Column(Integer)  # Sensor ID unique within a device
-    device_id = Column(Integer, ForeignKey("devices.id"))
+    device_id = Column(String, ForeignKey("devices.device_id"))
     name = Column(String, nullable=True)
 
     device = relationship("Device", back_populates="sensors")
