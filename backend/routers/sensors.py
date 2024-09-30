@@ -27,7 +27,7 @@ def read_sensors(db: Session = Depends(get_db)):
 def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db)):
     existing_sensor = crud.get_sensor_by_sensor_id(db, device_id=sensor.device_id, sensor_id=sensor.sensor_id)
     if existing_sensor:
-        raise HTTPException(status_code=400, detail="Sensor already exists")
+        raise HTTPException(status_code=400, detail="Sensor already exists for this device")
     return crud.create_sensor(db=db, sensor=sensor)
 
 @router.get("/", response_model=List[schemas.Sensor])
@@ -41,15 +41,17 @@ def set_threshold(sensor_id: int, threshold: schemas.ThresholdCreate, db: Sessio
     db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
     if db_sensor is None:
         raise HTTPException(status_code=404, detail="Sensor not found")
-    return crud.set_threshold(db, sensor_id=sensor_id, threshold_data=threshold)
+    return crud.set_threshold(db, sensor_id=db_sensor.sensor_id, threshold_data=threshold)
 
 @router.get("/{sensor_id}/threshold", response_model=schemas.Threshold)
 def get_threshold(sensor_id: int, db: Session = Depends(get_db)):
-    db_threshold = crud.get_threshold(db, sensor_id)
+    db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
+    if db_sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+    db_threshold = crud.get_threshold(db, db_sensor.sensor_id)
     if db_threshold is None:
         raise HTTPException(status_code=404, detail="Threshold not found")
     return db_threshold
-
 
 @router.put("/{sensor_id}", response_model=schemas.Sensor)
 def update_sensor(sensor_id: int, sensor_update: schemas.SensorUpdate, db: Session = Depends(get_db)):

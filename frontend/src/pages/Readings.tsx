@@ -43,7 +43,12 @@ const Readings: React.FC = () => {
 
   useEffect(() => {
     if (selectedDeviceId) {
+      // Clear sensors before fetching new ones
+      setSensors([]);
       fetchSensors(selectedDeviceId);
+    } else {
+      // If no device is selected, clear the sensors
+      setSensors([]);
     }
   }, [selectedDeviceId, fetchSensors]);
 

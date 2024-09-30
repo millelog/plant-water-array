@@ -23,9 +23,9 @@ def create_device(db: Session, device: schemas.DeviceCreate):
 def get_sensors(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Sensor).options(joinedload(models.Sensor.device)).offset(skip).limit(limit).all()
 
-def get_sensor_by_sensor_id(db: Session, device_id: int, sensor_id: int):
-    return db.query(models.Sensor).filter(
-        models.Sensor.device_id == device_id,
+def get_sensor_by_sensor_id(db: Session, device_id: str, sensor_id: int):
+    return db.query(models.Sensor).join(models.Device).filter(
+        models.Device.device_id == device_id,
         models.Sensor.sensor_id == sensor_id
     ).first()
     
@@ -42,8 +42,13 @@ def update_sensor(db: Session, sensor_id: int, sensor_update: schemas.SensorUpda
     return db_sensor
 
 def create_sensor(db: Session, sensor: schemas.SensorCreate):
+    # Get the device by its device_id
+    db_device = get_device_by_device_id(db, device_id=sensor.device_id)
+    if not db_device:
+        raise ValueError(f"Device with device_id {sensor.device_id} not found")
+    
     db_sensor = models.Sensor(
-        device_id=sensor.device_id,
+        device_id=db_device.id,  # Use the device's id, not the device_id
         sensor_id=sensor.sensor_id,
         name=sensor.name
     )
@@ -55,11 +60,11 @@ def create_sensor(db: Session, sensor: schemas.SensorCreate):
 def create_reading(db: Session, reading: schemas.ReadingCreate):
     db_device = get_device_by_device_id(db, device_id=reading.device_id)
     if not db_device:
-        raise ValueError("Device not found")
+        raise ValueError(f"Device with device_id {reading.device_id} not found")
     
-    db_sensor = get_sensor_by_sensor_id(db, device_id=db_device.id, sensor_id=reading.sensor_id)
+    db_sensor = get_sensor_by_sensor_id(db, device_id=reading.device_id, sensor_id=reading.sensor_id)
     if not db_sensor:
-        db_sensor = create_sensor(db, schemas.SensorCreate(device_id=db_device.id, sensor_id=reading.sensor_id))
+        db_sensor = create_sensor(db, schemas.SensorCreate(device_id=reading.device_id, sensor_id=reading.sensor_id))
 
     db_reading = models.Reading(
         device_id=reading.device_id,
@@ -72,15 +77,14 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
     db.refresh(db_reading)
 
     # Check thresholds and create alerts
-    db_sensor = db.query(models.Sensor).filter(models.Sensor.id == reading.sensor_id).first()
-    if db_sensor and db_sensor.threshold:
+    if db_sensor.threshold:
         threshold = db_sensor.threshold
         if threshold.min_moisture is not None and reading.moisture < threshold.min_moisture:
             alert_message = f"Moisture level below minimum threshold: {reading.moisture}"
-            create_alert(db, schemas.AlertCreate(sensor_id=reading.sensor_id, message=alert_message))
+            create_alert(db, schemas.AlertCreate(sensor_id=db_sensor.id, message=alert_message))
         if threshold.max_moisture is not None and reading.moisture > threshold.max_moisture:
             alert_message = f"Moisture level above maximum threshold: {reading.moisture}"
-            create_alert(db, schemas.AlertCreate(sensor_id=reading.sensor_id, message=alert_message))
+            create_alert(db, schemas.AlertCreate(sensor_id=db_sensor.id, message=alert_message))
 
     return db_reading
 
