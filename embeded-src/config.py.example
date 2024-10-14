@@ -1,0 +1,5 @@
+WIFI_SSID = "Your_SSID_Here"
+WIFI_PASSWORD = "Your_Password_Here"
+SERVER_URL = "http://your.server.url:port"
+DEVICE_NAME = "YourDeviceName"
+READING_INTERVAL = 10
