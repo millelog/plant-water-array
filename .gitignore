@@ -121,5 +121,8 @@ venv.bak/
 .mypy_cache/
 embeded-src/config.py
 
+# TypeScript build info
+*.tsbuildinfo
+
 # Firmware storage
 backend/firmware_storage/
