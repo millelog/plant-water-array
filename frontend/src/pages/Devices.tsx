@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { getDevices, createDevice } from '../api/api';
+import React, { useEffect, useState, useCallback } from 'react';
+import { getDevices, deleteDevice } from '../api/api';
 import DataTable from '../components/DataTable';
 import DeviceSetupInstructions from '../components/DeviceSetupInstructions';
-import { Device, DeviceCreate } from '../types';
+import { Device } from '../types';
 
 function timeAgo(dateString: string): string {
   const now = new Date();
@@ -19,34 +19,38 @@ function timeAgo(dateString: string): string {
 
 const Devices: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
-  const [newDevice, setNewDevice] = useState<DeviceCreate>({
-    name: '',
-    device_id: '',
-  });
   const [showInstructions, setShowInstructions] = useState(false);
+
+  const fetchDevices = useCallback(async () => {
+    const devicesData = await getDevices();
+    setDevices(devicesData);
+  }, []);
 
   useEffect(() => {
     fetchDevices();
-  }, []);
+    const interval = setInterval(fetchDevices, 30000);
+    return () => clearInterval(interval);
+  }, [fetchDevices]);
 
-  async function fetchDevices() {
-    const devicesData = await getDevices();
-    setDevices(devicesData);
-  }
-
-  async function handleCreateDevice(e: React.FormEvent) {
-    e.preventDefault();
-    console.log('Submitting new device:', newDevice);
-    await createDevice(newDevice);
-    setNewDevice({ name: '', device_id: '' });
+  async function handleDeleteDevice(deviceId: string, deviceName: string) {
+    if (!window.confirm(`Delete device "${deviceName}" (${deviceId})? This will remove all its sensors, readings, and alerts.`)) {
+      return;
+    }
+    await deleteDevice(deviceId);
     fetchDevices();
   }
 
-  function isOnline(lastSeen?: string): boolean {
-    if (!lastSeen) return false;
+  function getStatus(lastSeen?: string): { label: string; colorClass: string } {
+    if (!lastSeen) {
+      return { label: 'Provisioning', colorClass: 'bg-amber-400' };
+    }
     const now = new Date();
     const seen = new Date(lastSeen);
-    return (now.getTime() - seen.getTime()) < 5 * 60 * 1000; // 5 minutes
+    const online = (now.getTime() - seen.getTime()) < 5 * 60 * 1000;
+    if (online) {
+      return { label: 'Online', colorClass: 'bg-green-500' };
+    }
+    return { label: 'Offline', colorClass: 'bg-gray-400' };
   }
 
   const deviceColumns = [
@@ -56,11 +60,11 @@ const Devices: React.FC = () => {
       Header: 'Status',
       accessor: 'last_seen',
       Cell: ({ value }: { value: string | undefined }) => {
-        const online = isOnline(value);
+        const status = getStatus(value);
         return (
           <span className="flex items-center gap-2">
-            <span className={`inline-block w-2.5 h-2.5 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`} />
-            {online ? 'Online' : 'Offline'}
+            <span className={`inline-block w-2.5 h-2.5 rounded-full ${status.colorClass}`} />
+            {status.label}
           </span>
         );
       },
@@ -83,8 +87,16 @@ const Devices: React.FC = () => {
     {
       Header: 'Actions',
       accessor: 'actions',
-      Cell: () => (
-        <button className="text-blue-600 hover:underline">View Sensors</button>
+      Cell: (_: { value: unknown }, row: Device) => (
+        <div className="flex gap-2">
+          <button className="text-blue-600 hover:underline">View Sensors</button>
+          <button
+            className="text-red-600 hover:underline"
+            onClick={() => handleDeleteDevice(row.device_id, row.name)}
+          >
+            Delete
+          </button>
+        </div>
       ),
     },
   ];
@@ -92,44 +104,27 @@ const Devices: React.FC = () => {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Devices</h1>
-      <button
-        onClick={() => setShowInstructions(!showInstructions)}
-        className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
-      >
-        {showInstructions ? 'Hide' : 'Show'} Setup Instructions
-      </button>
-      {showInstructions && <DeviceSetupInstructions />}
-      <form className="mb-4" onSubmit={handleCreateDevice}>
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            placeholder="Device ID"
-            value={newDevice.device_id}
-            onChange={(e) =>
-              setNewDevice({ ...newDevice, device_id: e.target.value })
-            }
-            className="border p-2 flex-1"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Name"
-            value={newDevice.name}
-            onChange={(e) =>
-              setNewDevice({ ...newDevice, name: e.target.value })
-            }
-            className="border p-2 flex-1"
-            required
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Add Device
-          </button>
+
+      {devices.length === 0 ? (
+        <div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center mb-6">
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">No Devices Yet</h2>
+            <p className="text-blue-700 mb-4">Follow the setup instructions below to provision your first ESP32 plant sensor.</p>
+          </div>
+          <DeviceSetupInstructions />
         </div>
-      </form>
-      <DataTable columns={deviceColumns} data={devices} />
+      ) : (
+        <>
+          <button
+            onClick={() => setShowInstructions(!showInstructions)}
+            className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
+          >
+            {showInstructions ? 'Hide' : 'Show'} Setup Instructions
+          </button>
+          {showInstructions && <DeviceSetupInstructions />}
+          <DataTable columns={deviceColumns} data={devices} />
+        </>
+      )}
     </div>
   );
 };

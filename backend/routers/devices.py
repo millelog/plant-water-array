@@ -57,6 +57,14 @@ async def register_device(device: schemas.DeviceRegister, db: Session = Depends(
     return new_device
 
 
+@router.delete("/{device_id}")
+async def delete_device(device_id: str, db: Session = Depends(get_db)):
+    deleted = crud.delete_device(db, device_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Device not found")
+    return {"detail": "Device deleted"}
+
+
 @router.get("/", response_model=List[schemas.Device])
 async def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     devices = db.query(models.Device).offset(skip).limit(limit).all()

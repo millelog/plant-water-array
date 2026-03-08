@@ -13,6 +13,10 @@ export const createDevice = async (deviceData: { name: string; device_id: string
   return response.data;
 };
 
+export const deleteDevice = async (deviceId: string): Promise<void> => {
+  await axios.delete(`${API_URL}/devices/${deviceId}`);
+};
+
 export const getSensors = async (deviceId?: string): Promise<Sensor[]> => {
   const response = await axios.get(`${API_URL}/sensors`, {
     params: deviceId ? { device_id: deviceId } : {}

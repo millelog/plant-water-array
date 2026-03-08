@@ -6,7 +6,6 @@ import machine  # type: ignore
 import time
 import random
 import os
-import config
 
 
 sta_if = network.WLAN(network.STA_IF)
@@ -22,7 +21,39 @@ def get_ip():
     return None
 
 
+def is_configured():
+    try:
+        import config
+        if not hasattr(config, 'WIFI_SSID') or config.WIFI_SSID in ("", "Your_SSID_Here"):
+            return False
+        if not hasattr(config, 'SERVER_URL') or config.SERVER_URL in ("", "http://your.server.url:port"):
+            return False
+        return True
+    except ImportError:
+        return False
+
+
+def check_factory_reset():
+    pin = machine.Pin(0, machine.Pin.IN, machine.Pin.PULL_UP)
+    if pin.value() == 0:
+        print("BOOT button pressed, hold for 5 seconds to factory reset...")
+        start = time.time()
+        while pin.value() == 0:
+            if time.time() - start >= 5:
+                print("Factory reset triggered! Deleting config.py...")
+                try:
+                    os.remove("config.py")
+                    print("config.py deleted.")
+                except OSError:
+                    print("config.py not found, already clean.")
+                time.sleep(1)
+                machine.reset()
+            time.sleep(0.1)
+        print("BOOT button released before 5 seconds, continuing normal boot.")
+
+
 def connect_wifi():
+    import config
     if not sta_if.isconnected():
         print('Connecting to WiFi...')
         sta_if.active(True)
@@ -35,7 +66,9 @@ def connect_wifi():
         print('WiFi connected')
         print('Network config:', sta_if.ifconfig())
     else:
-        print('WiFi connection failed')
+        print('WiFi connection failed, falling back to captive portal...')
+        import captive_portal
+        captive_portal.run_portal()
 
 
 def ensure_wifi():
@@ -67,6 +100,7 @@ def http_request(method, url, max_retries=3, **kwargs):
 
 
 def ping_server():
+    import config
     try:
         print(f"Attempting to ping server at {config.SERVER_URL}/ping")
         response = http_request("GET", config.SERVER_URL + "/ping", timeout=10)
@@ -85,6 +119,7 @@ def ping_server():
 
 
 def register_with_server():
+    import config
     mac = get_mac()
     ip = get_ip()
     data = {
@@ -120,6 +155,7 @@ def recognize_sensors():
 
 
 def register_sensor(device_id, sensor_name):
+    import config
     data = {
         "device_id": device_id,
         "name": sensor_name
@@ -141,6 +177,7 @@ def register_sensor(device_id, sensor_name):
 
 
 def send_moisture_reading(device_id, sensor_id):
+    import config
     # Simulated reading - swap with real ADC reads when hardware is wired
     moisture = random.uniform(0, 100)
     data = {
@@ -157,6 +194,7 @@ def send_moisture_reading(device_id, sensor_id):
 
 
 def send_heartbeat(device_id):
+    import config
     data = {
         "firmware_version": config.FIRMWARE_VERSION,
         "ip_address": get_ip(),
@@ -191,6 +229,7 @@ def file_exists(path):
 
 
 def check_and_apply_ota(device_id):
+    import config
     try:
         response = http_request("GET", config.SERVER_URL + f"/devices/{device_id}/firmware/check?current_version={config.FIRMWARE_VERSION}")
         if response.status_code != 200:
@@ -316,6 +355,7 @@ def _restore_backups(backups):
 
 
 def main():
+    import config
     connect_wifi()
     if not sta_if.isconnected():
         print("WiFi connection failed. Exiting.")
@@ -367,7 +407,13 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
+        check_factory_reset()
+        if is_configured():
+            main()
+        else:
+            print("Device not configured. Starting captive portal...")
+            import captive_portal
+            captive_portal.run_portal()
     except KeyboardInterrupt:
         print("Program terminated by user")
     finally:

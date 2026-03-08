@@ -162,6 +162,30 @@ def set_threshold(db: Session, sensor_id: int, threshold_data: schemas.Threshold
     return db_threshold
 
 
+def delete_device(db: Session, device_id: str):
+    device = get_device_by_device_id(db, device_id)
+    if not device:
+        return False
+
+    sensors = get_sensors_by_device_id(db, device_id)
+    sensor_ids = [s.id for s in sensors]
+
+    if sensor_ids:
+        # Delete alerts for device's sensors
+        db.query(models.Alert).filter(models.Alert.sensor_id.in_(sensor_ids)).delete(synchronize_session=False)
+        # Delete thresholds for device's sensors
+        db.query(models.Threshold).filter(models.Threshold.sensor_id.in_(sensor_ids)).delete(synchronize_session=False)
+
+    # Delete readings by device_id
+    db.query(models.Reading).filter(models.Reading.device_id == device_id).delete(synchronize_session=False)
+    # Delete sensors
+    db.query(models.Sensor).filter(models.Sensor.device_id == device_id).delete(synchronize_session=False)
+    # Delete device
+    db.delete(device)
+    db.commit()
+    return True
+
+
 # OTA CRUD operations
 
 def update_device_heartbeat(db: Session, device_id: str, heartbeat: schemas.DeviceHeartbeat):
