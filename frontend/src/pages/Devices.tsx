@@ -4,6 +4,19 @@ import DataTable from '../components/DataTable';
 import DeviceSetupInstructions from '../components/DeviceSetupInstructions';
 import { Device, DeviceCreate } from '../types';
 
+function timeAgo(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 const Devices: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [newDevice, setNewDevice] = useState<DeviceCreate>({
@@ -29,9 +42,44 @@ const Devices: React.FC = () => {
     fetchDevices();
   }
 
+  function isOnline(lastSeen?: string): boolean {
+    if (!lastSeen) return false;
+    const now = new Date();
+    const seen = new Date(lastSeen);
+    return (now.getTime() - seen.getTime()) < 5 * 60 * 1000; // 5 minutes
+  }
+
   const deviceColumns = [
     { Header: 'Device ID', accessor: 'device_id' },
     { Header: 'Name', accessor: 'name' },
+    {
+      Header: 'Status',
+      accessor: 'last_seen',
+      Cell: ({ value }: { value: string | undefined }) => {
+        const online = isOnline(value);
+        return (
+          <span className="flex items-center gap-2">
+            <span className={`inline-block w-2.5 h-2.5 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`} />
+            {online ? 'Online' : 'Offline'}
+          </span>
+        );
+      },
+    },
+    {
+      Header: 'Firmware',
+      accessor: 'firmware_version',
+      Cell: ({ value }: { value: string | undefined }) => value || '-',
+    },
+    {
+      Header: 'IP Address',
+      accessor: 'ip_address',
+      Cell: ({ value }: { value: string | undefined }) => value ? <span className="font-mono text-sm">{value}</span> : '-',
+    },
+    {
+      Header: 'Last Seen',
+      accessor: 'last_seen_time',
+      Cell: (_: { value: unknown }, row: Device) => row.last_seen ? timeAgo(row.last_seen) : 'Never',
+    },
     {
       Header: 'Actions',
       accessor: 'actions',

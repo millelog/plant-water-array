@@ -2,16 +2,19 @@
 
 from sqlalchemy.orm import Session, joinedload
 import models, schemas
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import func
 import uuid
 import logging
 
+
 def get_device_by_device_id(db: Session, device_id: str):
     return db.query(models.Device).filter(models.Device.device_id == device_id).first()
 
+
 def get_device_by_name(db: Session, name: str):
     return db.query(models.Device).filter(models.Device.name == name).first()
+
 
 def create_device(db: Session, device: schemas.DeviceCreate):
     db_device = models.Device(device_id=device.device_id, name=device.name)
@@ -20,17 +23,21 @@ def create_device(db: Session, device: schemas.DeviceCreate):
     db.refresh(db_device)
     return db_device
 
+
 def get_sensors(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Sensor).options(joinedload(models.Sensor.device)).offset(skip).limit(limit).all()
+
 
 def get_sensor_by_sensor_id(db: Session, device_id: str, sensor_id: int):
     return db.query(models.Sensor).join(models.Device).filter(
         models.Device.device_id == device_id,
         models.Sensor.sensor_id == sensor_id
     ).first()
-    
+
+
 def get_sensors_by_device_id(db: Session, device_id: str):
     return db.query(models.Sensor).join(models.Device).filter(models.Device.device_id == device_id).all()
+
 
 def update_sensor(db: Session, sensor_id: int, sensor_update: schemas.SensorUpdate):
     db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
@@ -41,14 +48,14 @@ def update_sensor(db: Session, sensor_id: int, sensor_update: schemas.SensorUpda
         db.refresh(db_sensor)
     return db_sensor
 
+
 def create_sensor(db: Session, sensor: schemas.SensorCreate):
-    # Get the device by its device_id
     db_device = get_device_by_device_id(db, device_id=sensor.device_id)
     if not db_device:
         raise ValueError(f"Device with device_id {sensor.device_id} not found")
-    
+
     db_sensor = models.Sensor(
-        device_id=db_device.id,  # Use the device's id, not the device_id
+        device_id=db_device.device_id,
         sensor_id=sensor.sensor_id,
         name=sensor.name
     )
@@ -57,11 +64,12 @@ def create_sensor(db: Session, sensor: schemas.SensorCreate):
     db.refresh(db_sensor)
     return db_sensor
 
+
 def create_reading(db: Session, reading: schemas.ReadingCreate):
     db_device = get_device_by_device_id(db, device_id=reading.device_id)
     if not db_device:
         raise ValueError(f"Device with device_id {reading.device_id} not found")
-    
+
     db_sensor = get_sensor_by_sensor_id(db, device_id=reading.device_id, sensor_id=reading.sensor_id)
     if not db_sensor:
         db_sensor = create_sensor(db, schemas.SensorCreate(device_id=reading.device_id, sensor_id=reading.sensor_id))
@@ -70,7 +78,7 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
         device_id=reading.device_id,
         sensor_id=db_sensor.id,
         moisture=reading.moisture,
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
     db.add(db_reading)
     db.commit()
@@ -88,8 +96,10 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
 
     return db_reading
 
+
 def get_readings(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Reading).offset(skip).limit(limit).all()
+
 
 def get_readings_by_sensor(db: Session, device_id: str, sensor_id: int, start_time: datetime = None, end_time: datetime = None, skip: int = 0, limit: int = None):
     logging.info(f"Fetching readings for device_id: {device_id}, sensor_id: {sensor_id}, limit: {limit}")
@@ -104,11 +114,12 @@ def get_readings_by_sensor(db: Session, device_id: str, sensor_id: int, start_ti
     logging.info(f"Found {len(readings)} readings")
     return readings
 
+
 def create_alert(db: Session, alert: schemas.AlertCreate):
     db_alert = models.Alert(
         sensor_id=alert.sensor_id,
         message=alert.message,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         read=False
     )
     db.add(db_alert)
@@ -116,8 +127,10 @@ def create_alert(db: Session, alert: schemas.AlertCreate):
     db.refresh(db_alert)
     return db_alert
 
+
 def get_alerts(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Alert).offset(skip).limit(limit).all()
+
 
 def mark_alert_as_read(db: Session, alert_id: int):
     db_alert = db.query(models.Alert).filter(models.Alert.id == alert_id).first()
@@ -127,8 +140,10 @@ def mark_alert_as_read(db: Session, alert_id: int):
         db.refresh(db_alert)
     return db_alert
 
+
 def get_threshold(db: Session, sensor_id: int):
     return db.query(models.Threshold).filter(models.Threshold.sensor_id == sensor_id).first()
+
 
 def set_threshold(db: Session, sensor_id: int, threshold_data: schemas.ThresholdCreate):
     db_threshold = get_threshold(db, sensor_id)
@@ -145,3 +160,56 @@ def set_threshold(db: Session, sensor_id: int, threshold_data: schemas.Threshold
     db.commit()
     db.refresh(db_threshold)
     return db_threshold
+
+
+# OTA CRUD operations
+
+def update_device_heartbeat(db: Session, device_id: str, heartbeat: schemas.DeviceHeartbeat):
+    db_device = get_device_by_device_id(db, device_id)
+    if not db_device:
+        return None
+    db_device.last_seen = datetime.now(timezone.utc)
+    if heartbeat.firmware_version is not None:
+        db_device.firmware_version = heartbeat.firmware_version
+    if heartbeat.ip_address is not None:
+        db_device.ip_address = heartbeat.ip_address
+    if heartbeat.mac_address is not None:
+        db_device.mac_address = heartbeat.mac_address
+    db.commit()
+    db.refresh(db_device)
+    return db_device
+
+
+def get_latest_firmware(db: Session):
+    return db.query(models.Firmware).order_by(models.Firmware.upload_timestamp.desc()).first()
+
+
+def get_firmware_by_version(db: Session, version: str):
+    return db.query(models.Firmware).filter(models.Firmware.version == version).first()
+
+
+def get_all_firmware(db: Session):
+    return db.query(models.Firmware).order_by(models.Firmware.upload_timestamp.desc()).all()
+
+
+def create_firmware(db: Session, version: str, filename: str, checksum: str, size_bytes: int, notes: str = None):
+    db_firmware = models.Firmware(
+        version=version,
+        filename=filename,
+        checksum=checksum,
+        size_bytes=size_bytes,
+        notes=notes
+    )
+    db.add(db_firmware)
+    db.commit()
+    db.refresh(db_firmware)
+    return db_firmware
+
+
+def delete_firmware(db: Session, version: str):
+    db_firmware = get_firmware_by_version(db, version)
+    if db_firmware:
+        db.delete(db_firmware)
+        db.commit()
+        return True
+    return False

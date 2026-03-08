@@ -4,6 +4,10 @@ export interface Device {
   id: number;
   device_id: string;
   name: string;
+  firmware_version?: string;
+  ip_address?: string;
+  mac_address?: string;
+  last_seen?: string;
   sensors: Sensor[];
 }
 
@@ -15,14 +19,14 @@ export interface DeviceCreate {
 export interface Sensor {
   id: number;
   sensor_id: number;
-  device_id: number;
+  device_id: string;
   name: string | null;
   threshold: Threshold | null;
   device: Device;
 }
 
 export interface SensorCreate {
-  device_id: number;
+  device_id: string;
   sensor_id: number;
   name?: string;
 }
@@ -51,4 +55,14 @@ export interface Alert {
   message: string;
   timestamp: string;
   read: boolean;
+}
+
+export interface FirmwareInfo {
+  id: number;
+  version: string;
+  filename: string;
+  upload_timestamp: string;
+  checksum: string;
+  size_bytes: number;
+  notes?: string;
 }

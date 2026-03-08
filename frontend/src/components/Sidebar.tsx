@@ -6,6 +6,7 @@ import {
   BeakerIcon,
   BellIcon,
   CogIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
 
 interface MenuItem {
@@ -18,6 +19,7 @@ const menuItems: MenuItem[] = [
   { name: 'Dashboard', icon: HomeIcon, path: '/' },
   { name: 'Devices', icon: DevicePhoneMobileIcon, path: '/devices' },
   { name: 'Sensors', icon: BeakerIcon, path: '/sensors' },
+  { name: 'Firmware', icon: ArrowUpTrayIcon, path: '/firmware' },
   { name: 'Alerts', icon: BellIcon, path: '/alerts' },
   { name: 'Settings', icon: CogIcon, path: '/settings' },
 ];

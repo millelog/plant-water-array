@@ -3,3 +3,6 @@ WIFI_PASSWORD = "Your_Password_Here"
 SERVER_URL = "http://your.server.url:port"
 DEVICE_NAME = "YourDeviceName"
 READING_INTERVAL = 10
+FIRMWARE_VERSION = "1.0.0"
+OTA_CHECK_INTERVAL = 300  # seconds
+SENSOR_PINS = [34, 35, 32]  # ADC GPIO pins (for real hardware)

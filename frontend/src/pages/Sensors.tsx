@@ -8,7 +8,7 @@ const Sensors: React.FC = () => {
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [newSensor, setNewSensor] = useState<SensorCreate>({
-    device_id: 0,
+    device_id: '',
     sensor_id: 0,
     name: '',
   });
@@ -36,7 +36,7 @@ const Sensors: React.FC = () => {
         sensor_id: newSensor.sensor_id,
         name: newSensor.name
       });
-      setNewSensor({ device_id: 0, sensor_id: 0, name: '' });
+      setNewSensor({ device_id: '', sensor_id: 0, name: '' });
       fetchData();
     } else {
       console.error('Sensor name is required');
@@ -73,14 +73,14 @@ const Sensors: React.FC = () => {
           <select
             value={newSensor.device_id || ''}
             onChange={(e) =>
-              setNewSensor({ ...newSensor, device_id: Number(e.target.value) })
+              setNewSensor({ ...newSensor, device_id: e.target.value })
             }
             className="border p-2 flex-1"
             required
           >
             <option value="">Select Device</option>
             {devices.map((device) => (
-              <option key={device.id} value={device.id}>
+              <option key={device.id} value={device.device_id}>
                 {device.name}
               </option>
             ))}

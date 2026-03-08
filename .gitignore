@@ -120,3 +120,6 @@ venv.bak/
 # mypy
 .mypy_cache/
 embeded-src/config.py
+
+# Firmware storage
+backend/firmware_storage/

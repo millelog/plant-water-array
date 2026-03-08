@@ -3,7 +3,8 @@ import React from 'react';
 interface Column {
   Header: string;
   accessor: string;
-  Cell?: (props: { value: any }) => React.ReactNode;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Cell?: (props: { value: any }, row: any) => React.ReactNode;
 }
 
 interface DataTableProps {
@@ -35,7 +36,7 @@ const DataTable: React.FC<DataTableProps> = ({ columns, data }) => {
                 const cellValue = row[col.accessor];
                 return (
                   <td key={col.accessor} className="px-6 py-4 whitespace-nowrap">
-                    {col.Cell ? col.Cell({ value: cellValue }) : cellValue}
+                    {col.Cell ? col.Cell({ value: cellValue }, row) : cellValue}
                   </td>
                 );
               })}
