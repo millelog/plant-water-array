@@ -168,7 +168,7 @@ def save_config(ssid, password, server_url, device_name):
         f.write('FIRMWARE_VERSION = "1.0.0"\n')
         f.write("OTA_CHECK_INTERVAL = 300\n")
         f.write("SENSOR_PINS = [34]\n")
-        f.write("ADC_DRY = 3500\n")
+        f.write("ADC_DRY = 0\n")
         f.write("ADC_WET = 1500\n")
 
 

@@ -188,7 +188,7 @@ def read_moisture(adc, samples=10):
         time.sleep_ms(10)
     raw = total // samples
 
-    dry_val = getattr(config, 'ADC_DRY', 3500)
+    dry_val = getattr(config, 'ADC_DRY', 0)
     wet_val = getattr(config, 'ADC_WET', 1500)
 
     if dry_val == wet_val:

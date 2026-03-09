@@ -49,5 +49,5 @@ SENSOR_PINS = [34]
 #   ADC_DRY: raw ADC reading when sensor is in air (dry)
 #   ADC_WET: raw ADC reading when sensor is submerged in water
 # Read raw values from the serial console output to calibrate.
-ADC_DRY = 3500
+ADC_DRY = 0
 ADC_WET = 1500
