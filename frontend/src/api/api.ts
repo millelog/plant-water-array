@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading } from '../types';
+import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary } from '../types';
 
 const API_URL = 'http://localhost:8000';
 
@@ -40,13 +40,22 @@ export const createReading = async (deviceId: string, sensorId: number, moisture
   return response.data;
 };
 
-export const getAlerts = async (): Promise<Alert[]> => {
-  const response = await axios.get(`${API_URL}/alerts`);
+export const getAlerts = async (params?: { sensor_id?: number; unread_only?: boolean }): Promise<Alert[]> => {
+  const response = await axios.get(`${API_URL}/alerts`, { params });
   return response.data;
 };
 
 export const markAlertAsRead = async (alertId: number): Promise<void> => {
-  await axios.put(`${API_URL}/alerts/${alertId}/read`);
+  await axios.put(`${API_URL}/alerts/${alertId}`);
+};
+
+export const getUnreadAlertCount = async (): Promise<number> => {
+  const response = await axios.get(`${API_URL}/alerts/unread-count`);
+  return response.data.count;
+};
+
+export const markAllAlertsRead = async (): Promise<void> => {
+  await axios.put(`${API_URL}/alerts/mark-all-read`);
 };
 
 export const getThreshold = async (sensorId: number): Promise<Threshold> => {
@@ -66,6 +75,11 @@ export const createSensor = async (sensorData: { device_id: string; sensor_id: n
 
 export const updateSensor = async (sensorId: number, sensorData: SensorUpdate): Promise<Sensor> => {
   const response = await axios.put(`${API_URL}/sensors/${sensorId}`, sensorData);
+  return response.data;
+};
+
+export const getSensorDetail = async (sensorId: number): Promise<Sensor> => {
+  const response = await axios.get(`${API_URL}/sensors/${sensorId}/detail`);
   return response.data;
 };
 
@@ -110,4 +124,39 @@ export const uploadFirmware = async (version: string, notes: string, files: File
 
 export const deleteFirmware = async (version: string): Promise<void> => {
   await axios.delete(`${API_URL}/firmware/${version}`);
+};
+
+// Zone API functions
+
+export const getZones = async (): Promise<Zone[]> => {
+  const response = await axios.get(`${API_URL}/zones/`);
+  return response.data;
+};
+
+export const createZone = async (data: { name: string; sort_order?: number }): Promise<Zone> => {
+  const response = await axios.post(`${API_URL}/zones/`, data);
+  return response.data;
+};
+
+export const updateZone = async (zoneId: number, data: { name?: string; sort_order?: number }): Promise<Zone> => {
+  const response = await axios.put(`${API_URL}/zones/${zoneId}`, data);
+  return response.data;
+};
+
+export const deleteZone = async (zoneId: number): Promise<void> => {
+  await axios.delete(`${API_URL}/zones/${zoneId}`);
+};
+
+// Dashboard API functions
+
+export const getDashboardSummary = async (): Promise<DashboardSummary> => {
+  const response = await axios.get(`${API_URL}/dashboard/summary`);
+  return response.data;
+};
+
+// Readings cleanup
+
+export const cleanupOldReadings = async (olderThanDays: number = 90): Promise<{ deleted: number }> => {
+  const response = await axios.delete(`${API_URL}/readings/cleanup`, { params: { older_than_days: olderThanDays } });
+  return response.data;
 };

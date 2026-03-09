@@ -1,49 +1,65 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { getSensors, createSensor, getDevices } from '../api/api';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { getSensors, getDevices, getZones, getDashboardSummary } from '../api/api';
 import DataTable from '../components/DataTable';
 import CalibrationWizard from '../components/CalibrationWizard';
-import { Sensor, SensorCreate, Device } from '../types';
-import { useSearchParams } from 'react-router-dom';
+import { Sensor, Device, Zone } from '../types';
+import { useSearchParams, Link } from 'react-router-dom';
 
 const Sensors: React.FC = () => {
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
-  const [newSensor, setNewSensor] = useState<SensorCreate>({
-    device_id: '',
-    sensor_id: 0,
-    name: '',
-  });
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [moistureMap, setMoistureMap] = useState<Record<number, { moisture: number | null; status: string }>>({});
   const [calibratingSensor, setCalibratingSensor] = useState<Sensor | null>(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const activeDeviceId = searchParams.get('deviceId') || '';
+  const activeZoneId = searchParams.get('zoneId') || '';
 
   const fetchData = useCallback(async () => {
-    const deviceId = searchParams.get('deviceId');
-    const [sensorsData, devicesData] = await Promise.all([
-      getSensors(deviceId || undefined),
-      getDevices()
+    const [sensorsData, devicesData, zonesData, summary] = await Promise.all([
+      getSensors(activeDeviceId || undefined),
+      getDevices(),
+      getZones(),
+      getDashboardSummary(),
     ]);
     setSensors(sensorsData);
     setDevices(devicesData);
-  }, [searchParams]);
+    setZones(zonesData);
+    const map: Record<number, { moisture: number | null; status: string }> = {};
+    for (const s of summary.sensors) {
+      map[s.id] = { moisture: s.current_moisture, status: s.status };
+    }
+    setMoistureMap(map);
+  }, [activeDeviceId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  async function handleCreateSensor(e: React.FormEvent) {
-    e.preventDefault();
-    if (newSensor.name) {
-      await createSensor({
-        device_id: newSensor.device_id,
-        sensor_id: newSensor.sensor_id,
-        name: newSensor.name
-      });
-      setNewSensor({ device_id: '', sensor_id: 0, name: '' });
-      fetchData();
+  const setFilter = (key: string, value: string) => {
+    const params: Record<string, string> = {};
+    if (key === 'deviceId') {
+      if (value) params.deviceId = value;
+      if (activeZoneId) params.zoneId = activeZoneId;
     } else {
-      console.error('Sensor name is required');
+      if (activeDeviceId) params.deviceId = activeDeviceId;
+      if (value) params.zoneId = value;
     }
-  }
+    setSearchParams(params);
+  };
+
+  const filteredSensors = useMemo(() => {
+    if (!activeZoneId) return sensors;
+    if (activeZoneId === 'ungrouped') return sensors.filter(s => !s.zone_id);
+    const zoneIdNum = Number(activeZoneId);
+    return sensors.filter(s => s.zone_id === zoneIdNum);
+  }, [sensors, activeZoneId]);
+
+  const activeDevice = devices.find(d => d.device_id === activeDeviceId);
+  const activeZone = activeZoneId === 'ungrouped'
+    ? { name: 'Ungrouped' }
+    : zones.find(z => z.id === Number(activeZoneId));
 
   const sensorColumns = [
     {
@@ -58,6 +74,27 @@ const Sensors: React.FC = () => {
       ),
     },
     {
+      Header: 'Moisture',
+      accessor: 'id',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Cell: ({ value }: { value: number }) => {
+        const data = moistureMap[value];
+        if (!data || data.moisture === null) {
+          return <span className="text-text-muted text-sm">No data</span>;
+        }
+        const m = data.moisture;
+        const color = m < 20 ? 'text-danger' : m < 40 ? 'text-soil' : 'text-accent';
+        return (
+          <div className="flex items-center gap-2">
+            <span className={`data-value text-sm font-bold ${color}`}>{m.toFixed(1)}%</span>
+            <div className="moisture-bar w-16">
+              <div className="moisture-bar-fill" style={{ width: `${Math.min(100, Math.max(0, m))}%` }} />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       Header: 'Device',
       accessor: 'device.name',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,6 +104,16 @@ const Sensors: React.FC = () => {
           <div className="text-xs text-text-muted font-mono">{row.device?.device_id || row.device_id}</div>
         </div>
       ),
+    },
+    {
+      Header: 'Zone',
+      accessor: 'zone_id',
+      Cell: ({ value }: { value: number | null }) => {
+        const zone = zones.find(z => z.id === value);
+        return zone
+          ? <span className="badge bg-accent-glow text-accent border border-accent/15">{zone.name}</span>
+          : <span className="text-text-muted text-sm">—</span>;
+      },
     },
     {
       Header: 'Threshold',
@@ -99,6 +146,12 @@ const Sensors: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       Cell: (_props: any, row: any) => (
         <div className="flex gap-2 justify-end">
+          <Link
+            to={`/plant/${row.id}`}
+            className="btn-secondary text-xs py-1.5 px-3"
+          >
+            Details
+          </Link>
           <button
             className="btn-secondary text-xs py-1.5 px-3"
             onClick={() => setCalibratingSensor(row as Sensor)}
@@ -112,47 +165,46 @@ const Sensors: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Add sensor form */}
-      <div className="card p-5">
-        <div className="section-title mb-4">Add Sensor</div>
-        <form onSubmit={handleCreateSensor}>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <select
-              value={newSensor.device_id || ''}
-              onChange={(e) => setNewSensor({ ...newSensor, device_id: e.target.value })}
-              className="input sm:flex-1"
-              required
-            >
-              <option value="">Select Device</option>
-              {devices.map((device) => (
-                <option key={device.id} value={device.device_id}>
-                  {device.name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              placeholder="Sensor ID"
-              value={newSensor.sensor_id || ''}
-              onChange={(e) => setNewSensor({ ...newSensor, sensor_id: Number(e.target.value) })}
-              className="input sm:flex-1"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Sensor Name"
-              value={newSensor.name || ''}
-              onChange={(e) => setNewSensor({ ...newSensor, name: e.target.value })}
-              className="input sm:flex-1"
-            />
-            <button type="submit" className="btn-primary whitespace-nowrap">
-              Add Sensor
-            </button>
-          </div>
-        </form>
+      {/* Filter bar */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <select
+          value={activeDeviceId}
+          onChange={(e) => setFilter('deviceId', e.target.value)}
+          className="input !w-auto"
+        >
+          <option value="">All Devices</option>
+          {devices.map((device) => (
+            <option key={device.id} value={device.device_id}>
+              {device.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={activeZoneId}
+          onChange={(e) => setFilter('zoneId', e.target.value)}
+          className="input !w-auto"
+        >
+          <option value="">All Zones</option>
+          {zones.map((zone) => (
+            <option key={zone.id} value={zone.id}>
+              {zone.name}
+            </option>
+          ))}
+          <option value="ungrouped">Ungrouped</option>
+        </select>
+        {(activeDevice || activeZone) && (
+          <span className="text-sm text-text-muted">
+            {activeDevice && <>Device: <span className="text-text font-medium">{activeDevice.name}</span></>}
+            {activeDevice && activeZone && <> · </>}
+            {activeZone && <>Zone: <span className="text-text font-medium">{activeZone.name}</span></>}
+          </span>
+        )}
+        <span className="ml-auto text-sm text-text-muted">
+          <span className="data-value">{filteredSensors.length}</span> sensor{filteredSensors.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
-      <DataTable columns={sensorColumns} data={sensors} />
+      <DataTable columns={sensorColumns} data={filteredSensors} />
 
       {calibratingSensor && (
         <CalibrationWizard

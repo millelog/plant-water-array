@@ -25,6 +25,7 @@ def upgrade_db():
             "ALTER TABLE sensors ADD COLUMN calibration_dry FLOAT",
             "ALTER TABLE sensors ADD COLUMN calibration_wet FLOAT",
             "ALTER TABLE readings ADD COLUMN raw_adc FLOAT",
+            "ALTER TABLE sensors ADD COLUMN zone_id INTEGER REFERENCES zones(id)",
         ]
         for sql in migrations:
             try:

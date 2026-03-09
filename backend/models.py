@@ -20,6 +20,16 @@ class Device(Base):
     sensors = relationship("Sensor", back_populates="device")
 
 
+class Zone(Base):
+    __tablename__ = "zones"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True)
+    sort_order = Column(Integer, default=0)
+
+    sensors = relationship("Sensor", back_populates="zone")
+
+
 class Sensor(Base):
     __tablename__ = "sensors"
 
@@ -27,10 +37,12 @@ class Sensor(Base):
     sensor_id = Column(Integer)  # Sensor ID unique within a device
     device_id = Column(String, ForeignKey("devices.device_id"))
     name = Column(String, nullable=True)
+    zone_id = Column(Integer, ForeignKey("zones.id"), nullable=True)
     calibration_dry = Column(Float, nullable=True)
     calibration_wet = Column(Float, nullable=True)
 
     device = relationship("Device", back_populates="sensors")
+    zone = relationship("Zone", back_populates="sensors")
     readings = relationship("Reading", back_populates="sensor")
     threshold = relationship("Threshold", uselist=False, back_populates="sensor")
 

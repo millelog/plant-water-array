@@ -8,24 +8,62 @@ import {
   CogIcon,
   ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
+import { useAlerts } from '../context/AlertContext';
 
 interface MenuItem {
   name: string;
   icon: React.FC<React.SVGProps<SVGSVGElement>>;
   path: string;
+  badge?: number;
 }
-
-const menuItems: MenuItem[] = [
-  { name: 'Dashboard', icon: HomeIcon, path: '/' },
-  { name: 'Devices', icon: DevicePhoneMobileIcon, path: '/devices' },
-  { name: 'Sensors', icon: BeakerIcon, path: '/sensors' },
-  { name: 'Firmware', icon: ArrowUpTrayIcon, path: '/firmware' },
-  { name: 'Alerts', icon: BellIcon, path: '/alerts' },
-  { name: 'Settings', icon: CogIcon, path: '/settings' },
-];
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const { unreadCount } = useAlerts();
+
+  const primaryItems: MenuItem[] = [
+    { name: 'Dashboard', icon: HomeIcon, path: '/' },
+    { name: 'Alerts', icon: BellIcon, path: '/alerts', badge: unreadCount },
+  ];
+
+  const adminItems: MenuItem[] = [
+    { name: 'Devices', icon: DevicePhoneMobileIcon, path: '/devices' },
+    { name: 'Sensors', icon: BeakerIcon, path: '/sensors' },
+    { name: 'Firmware', icon: ArrowUpTrayIcon, path: '/firmware' },
+    { name: 'Settings', icon: CogIcon, path: '/settings' },
+  ];
+
+  const renderItem = (item: MenuItem) => {
+    const Icon = item.icon;
+    const isActive = item.path === '/'
+      ? location.pathname === '/'
+      : location.pathname.startsWith(item.path);
+
+    return (
+      <Link
+        key={item.name}
+        to={item.path}
+        className={`
+          flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+          transition-all duration-150 group
+          ${isActive
+            ? 'bg-accent-glow text-accent border border-accent/15'
+            : 'text-text-secondary hover:text-text hover:bg-canvas-200 border border-transparent'
+          }
+        `}
+      >
+        <Icon className={`w-[18px] h-[18px] flex-shrink-0 transition-colors ${
+          isActive ? 'text-accent' : 'text-text-muted group-hover:text-text-secondary'
+        }`} />
+        <span className="flex-1">{item.name}</span>
+        {item.badge !== undefined && item.badge > 0 && (
+          <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full bg-danger text-canvas text-[11px] font-mono font-bold px-1.5">
+            {item.badge > 99 ? '99+' : item.badge}
+          </span>
+        )}
+      </Link>
+    );
+  };
 
   return (
     <aside className="w-60 flex-shrink-0 bg-canvas-50 border-r border-surface-border flex flex-col">
@@ -50,32 +88,14 @@ const Sidebar: React.FC = () => {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 px-3 space-y-0.5">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.path === '/'
-            ? location.pathname === '/'
-            : location.pathname.startsWith(item.path);
+        {primaryItems.map(renderItem)}
 
-          return (
-            <Link
-              key={item.name}
-              to={item.path}
-              className={`
-                flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                transition-all duration-150 group
-                ${isActive
-                  ? 'bg-accent-glow text-accent border border-accent/15'
-                  : 'text-text-secondary hover:text-text hover:bg-canvas-200 border border-transparent'
-                }
-              `}
-            >
-              <Icon className={`w-[18px] h-[18px] flex-shrink-0 transition-colors ${
-                isActive ? 'text-accent' : 'text-text-muted group-hover:text-text-secondary'
-              }`} />
-              {item.name}
-            </Link>
-          );
-        })}
+        {/* Admin divider */}
+        <div className="pt-4 pb-2 px-3">
+          <div className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Admin</div>
+        </div>
+
+        {adminItems.map(renderItem)}
       </nav>
 
       {/* Footer */}

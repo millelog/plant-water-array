@@ -28,6 +28,14 @@ async def read_sensors(device_id: Optional[str] = None, db: Session = Depends(ge
     return crud.get_sensors(db)
 
 
+@router.get("/{sensor_id}/detail", response_model=schemas.Sensor)
+async def get_sensor_detail(sensor_id: int, db: Session = Depends(get_db)):
+    db_sensor = crud.get_sensor_by_db_id(db, sensor_id)
+    if db_sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+    return db_sensor
+
+
 @router.post("/{sensor_id}/threshold", response_model=schemas.Threshold)
 async def set_threshold(sensor_id: int, threshold: schemas.ThresholdCreate, db: Session = Depends(get_db)):
     db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()

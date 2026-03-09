@@ -2,7 +2,7 @@
 
 from sqlalchemy.orm import Session, joinedload
 import models, schemas
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import func
 import uuid
 import logging
@@ -100,15 +100,17 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
     db.commit()
     db.refresh(db_reading)
 
-    # Check thresholds and create alerts
+    # Check thresholds and create alerts (with 30-min cooldown)
     if db_sensor.threshold:
         threshold = db_sensor.threshold
         if threshold.min_moisture is not None and moisture < threshold.min_moisture:
-            alert_message = f"Moisture level below minimum threshold: {moisture}"
-            create_alert(db, schemas.AlertCreate(sensor_id=db_sensor.id, message=alert_message))
+            if not _alert_recently_created(db, db_sensor.id):
+                alert_message = f"Moisture level below minimum threshold: {moisture}"
+                create_alert(db, schemas.AlertCreate(sensor_id=db_sensor.id, message=alert_message))
         if threshold.max_moisture is not None and moisture > threshold.max_moisture:
-            alert_message = f"Moisture level above maximum threshold: {moisture}"
-            create_alert(db, schemas.AlertCreate(sensor_id=db_sensor.id, message=alert_message))
+            if not _alert_recently_created(db, db_sensor.id):
+                alert_message = f"Moisture level above maximum threshold: {moisture}"
+                create_alert(db, schemas.AlertCreate(sensor_id=db_sensor.id, message=alert_message))
 
     return db_reading
 
@@ -148,6 +150,15 @@ def get_readings_by_sensor(db: Session, device_id: str, sensor_db_id: int, start
     readings = query.offset(skip).all()
     logging.info(f"Found {len(readings)} readings")
     return readings
+
+
+def _alert_recently_created(db: Session, sensor_id: int, minutes: int = 30) -> bool:
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+    recent = db.query(models.Alert).filter(
+        models.Alert.sensor_id == sensor_id,
+        models.Alert.timestamp >= cutoff
+    ).first()
+    return recent is not None
 
 
 def create_alert(db: Session, alert: schemas.AlertCreate):
@@ -272,3 +283,183 @@ def delete_firmware(db: Session, version: str):
         db.commit()
         return True
     return False
+
+
+# Zone CRUD
+
+def create_zone(db: Session, zone: schemas.ZoneCreate):
+    db_zone = models.Zone(name=zone.name, sort_order=zone.sort_order or 0)
+    db.add(db_zone)
+    db.commit()
+    db.refresh(db_zone)
+    return db_zone
+
+
+def get_zones(db: Session):
+    return db.query(models.Zone).order_by(models.Zone.sort_order, models.Zone.name).all()
+
+
+def update_zone(db: Session, zone_id: int, zone_update: schemas.ZoneUpdate):
+    db_zone = db.query(models.Zone).filter(models.Zone.id == zone_id).first()
+    if db_zone:
+        for key, value in zone_update.dict(exclude_unset=True).items():
+            setattr(db_zone, key, value)
+        db.commit()
+        db.refresh(db_zone)
+    return db_zone
+
+
+def delete_zone(db: Session, zone_id: int):
+    db_zone = db.query(models.Zone).filter(models.Zone.id == zone_id).first()
+    if not db_zone:
+        return False
+    # Orphan sensors instead of deleting them
+    db.query(models.Sensor).filter(models.Sensor.zone_id == zone_id).update(
+        {models.Sensor.zone_id: None}, synchronize_session=False
+    )
+    db.delete(db_zone)
+    db.commit()
+    return True
+
+
+# Alert helpers
+
+def get_unread_alert_count(db: Session) -> int:
+    return db.query(func.count(models.Alert.id)).filter(models.Alert.read == False).scalar() or 0
+
+
+def mark_all_alerts_read(db: Session):
+    db.query(models.Alert).filter(models.Alert.read == False).update(
+        {models.Alert.read: True}, synchronize_session=False
+    )
+    db.commit()
+
+
+def get_alerts_filtered(db: Session, sensor_id: int = None, unread_only: bool = False, skip: int = 0, limit: int = 100):
+    query = db.query(models.Alert)
+    if sensor_id is not None:
+        query = query.filter(models.Alert.sensor_id == sensor_id)
+    if unread_only:
+        query = query.filter(models.Alert.read == False)
+    return query.order_by(models.Alert.timestamp.desc()).offset(skip).limit(limit).all()
+
+
+# Sensor by DB id
+
+def get_sensor_by_db_id(db: Session, sensor_db_id: int):
+    return db.query(models.Sensor).options(
+        joinedload(models.Sensor.device),
+        joinedload(models.Sensor.threshold),
+        joinedload(models.Sensor.zone)
+    ).filter(models.Sensor.id == sensor_db_id).first()
+
+
+# Dashboard summary
+
+def get_dashboard_summary(db: Session) -> schemas.DashboardSummary:
+    now = datetime.now(timezone.utc)
+    online_cutoff = now - timedelta(minutes=5)
+    hour_24_ago = now - timedelta(hours=24)
+
+    # Stats
+    all_devices = db.query(models.Device).all()
+    total_devices = len(all_devices)
+    online_devices = sum(1 for d in all_devices if d.last_seen and d.last_seen.replace(tzinfo=timezone.utc) >= online_cutoff)
+
+    all_sensors = db.query(models.Sensor).options(
+        joinedload(models.Sensor.device),
+        joinedload(models.Sensor.threshold),
+        joinedload(models.Sensor.zone)
+    ).all()
+    total_sensors = len(all_sensors)
+
+    unread_alert_count = get_unread_alert_count(db)
+
+    sensor_summaries = []
+    sensors_needing_water = 0
+
+    for sensor in all_sensors:
+        # Latest reading
+        latest = db.query(models.Reading).filter(
+            models.Reading.sensor_id == sensor.id
+        ).order_by(models.Reading.timestamp.desc()).first()
+
+        current_moisture = latest.moisture if latest else None
+        last_reading_time = latest.timestamp if latest else None
+
+        # 24h sparkline - hourly averages
+        hourly_readings = db.query(
+            func.strftime('%Y-%m-%d %H:00', models.Reading.timestamp).label('hour'),
+            func.avg(models.Reading.moisture).label('avg_moisture')
+        ).filter(
+            models.Reading.sensor_id == sensor.id,
+            models.Reading.timestamp >= hour_24_ago
+        ).group_by(
+            func.strftime('%Y-%m-%d %H:00', models.Reading.timestamp)
+        ).order_by('hour').all()
+
+        sparkline = [
+            schemas.SparklinePoint(hour=row.hour, moisture=round(row.avg_moisture, 1))
+            for row in hourly_readings
+        ]
+
+        # Trend from last 3 hours
+        trend = "stable"
+        if len(sparkline) >= 2:
+            recent_vals = [p.moisture for p in sparkline[-3:]]
+            if len(recent_vals) >= 2:
+                diff = recent_vals[-1] - recent_vals[0]
+                if diff > 2:
+                    trend = "rising"
+                elif diff < -2:
+                    trend = "falling"
+
+        # Threshold + status
+        threshold_min = sensor.threshold.min_moisture if sensor.threshold else None
+        threshold_max = sensor.threshold.max_moisture if sensor.threshold else None
+
+        if current_moisture is None:
+            status = "no-data"
+        elif threshold_min is not None and current_moisture < threshold_min:
+            status = "dry"
+            sensors_needing_water += 1
+        elif threshold_max is not None and current_moisture > threshold_max:
+            status = "wet"
+        else:
+            status = "healthy"
+
+        sensor_summaries.append(schemas.SensorSummary(
+            id=sensor.id,
+            sensor_id=sensor.sensor_id,
+            name=sensor.name,
+            device_id=sensor.device_id,
+            device_name=sensor.device.name if sensor.device else "Unknown",
+            zone_id=sensor.zone_id,
+            zone_name=sensor.zone.name if sensor.zone else None,
+            current_moisture=current_moisture,
+            last_reading_time=last_reading_time,
+            sparkline=sparkline,
+            trend=trend,
+            threshold_min=threshold_min,
+            threshold_max=threshold_max,
+            status=status,
+        ))
+
+    stats = schemas.DashboardStats(
+        total_devices=total_devices,
+        online_devices=online_devices,
+        total_sensors=total_sensors,
+        sensors_needing_water=sensors_needing_water,
+        unread_alert_count=unread_alert_count,
+    )
+
+    return schemas.DashboardSummary(stats=stats, sensors=sensor_summaries)
+
+
+# Readings cleanup
+
+def delete_old_readings(db: Session, older_than_days: int = 90) -> int:
+    cutoff = datetime.now(timezone.utc) - timedelta(days=older_than_days)
+    count = db.query(models.Reading).filter(models.Reading.timestamp < cutoff).delete(synchronize_session=False)
+    db.commit()
+    return count

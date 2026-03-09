@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.orm import Session
 import schemas, crud, models
 from dependencies import get_db
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 import logging
 
@@ -70,3 +70,9 @@ async def read_readings_by_device_and_sensor(
     except Exception as e:
         logging.error(f"Error fetching readings: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.delete("/readings/cleanup")
+async def cleanup_old_readings(older_than_days: int = Query(90, ge=1), db: Session = Depends(get_db)):
+    count = crud.delete_old_readings(db, older_than_days=older_than_days)
+    return {"deleted": count, "older_than_days": older_than_days}

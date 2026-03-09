@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { getDevices, deleteDevice } from '../api/api';
 import DataTable from '../components/DataTable';
 import DeviceSetupInstructions from '../components/DeviceSetupInstructions';
@@ -102,6 +103,12 @@ const Devices: React.FC = () => {
       accessor: 'actions',
       Cell: (_: { value: unknown }, row: Device) => (
         <div className="flex gap-2 justify-end">
+          <Link
+            to={`/sensors?deviceId=${encodeURIComponent(row.device_id)}`}
+            className="btn-secondary text-xs py-1.5 px-3"
+          >
+            Sensors ({row.sensors.length})
+          </Link>
           <button
             className="btn-danger text-xs py-1.5 px-3"
             onClick={() => handleDeleteDevice(row.device_id, row.name)}

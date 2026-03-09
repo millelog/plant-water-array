@@ -1,0 +1,117 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { SensorSummary } from '../types';
+import SparklineChart from './SparklineChart';
+import InlineEdit from './InlineEdit';
+import { updateSensor } from '../api/api';
+
+interface PlantCardProps {
+  sensor: SensorSummary;
+  onNameChange?: () => void;
+}
+
+function getMoistureColor(value: number): string {
+  if (value < 20) return 'text-danger';
+  if (value < 40) return 'text-soil';
+  return 'text-accent';
+}
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case 'dry':
+      return <span className="badge bg-danger-glow text-danger border border-danger/20">Needs Water</span>;
+    case 'wet':
+      return <span className="badge bg-soil-glow text-soil border border-soil/20">Too Wet</span>;
+    case 'healthy':
+      return <span className="badge bg-accent-glow text-accent border border-accent/20">Healthy</span>;
+    default:
+      return <span className="badge bg-canvas-200 text-text-muted border border-surface-border">No Data</span>;
+  }
+}
+
+function getTrendArrow(trend: string) {
+  switch (trend) {
+    case 'rising':
+      return <span className="text-accent text-xs">&#9650;</span>;
+    case 'falling':
+      return <span className="text-danger text-xs">&#9660;</span>;
+    default:
+      return <span className="text-text-muted text-xs">&#9654;</span>;
+  }
+}
+
+const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange }) => {
+  const displayName = sensor.name || `Sensor ${sensor.sensor_id}`;
+
+  const handleRename = async (newName: string) => {
+    await updateSensor(sensor.id, { name: newName });
+    onNameChange?.();
+  };
+
+  return (
+    <div className="card p-4 flex flex-col gap-3 hover:shadow-card-hover">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <InlineEdit
+            value={displayName}
+            onSave={handleRename}
+            className="font-body font-semibold text-text text-sm"
+            placeholder="Name this plant"
+          />
+          <div className="text-[11px] text-text-muted font-mono mt-0.5 truncate">
+            on {sensor.device_name}
+          </div>
+        </div>
+        {getStatusBadge(sensor.status)}
+      </div>
+
+      {sensor.current_moisture !== null ? (
+        <>
+          <div className="flex items-baseline gap-2">
+            <span className={`text-2xl font-mono font-bold ${getMoistureColor(sensor.current_moisture)}`}>
+              {sensor.current_moisture.toFixed(1)}%
+            </span>
+            {getTrendArrow(sensor.trend)}
+          </div>
+          <div className="moisture-bar">
+            <div
+              className="moisture-bar-fill"
+              style={{ width: `${Math.min(100, Math.max(0, sensor.current_moisture))}%` }}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="text-sm text-text-muted italic py-2">No readings yet</div>
+      )}
+
+      <SparklineChart data={sensor.sparkline} />
+
+      <div className="flex items-center justify-between mt-auto pt-1">
+        {sensor.last_reading_time && (
+          <span className="text-[11px] text-text-muted font-mono">
+            {formatTimeAgo(sensor.last_reading_time)}
+          </span>
+        )}
+        <Link
+          to={`/plant/${sensor.id}`}
+          className="text-xs text-accent hover:text-accent-dim font-medium transition-colors ml-auto"
+        >
+          Details &rarr;
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+function formatTimeAgo(timestamp: string): string {
+  const diff = Date.now() - new Date(timestamp).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+export default PlantCard;

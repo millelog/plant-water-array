@@ -7,6 +7,7 @@ import Readings from './pages/Readings';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
 import Firmware from './pages/Firmware';
+import PlantDetail from './pages/PlantDetail';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/readings" element={<Readings />} />
       <Route path="/readings/:deviceId" element={<Readings />} />
       <Route path="/readings/:deviceId/:sensorId" element={<Readings />} />
+      <Route path="/plant/:sensorDbId" element={<PlantDetail />} />
       <Route path="/alerts" element={<Alerts />} />
       <Route path="/firmware" element={<Firmware />} />
       <Route path="/settings" element={<Settings />} />

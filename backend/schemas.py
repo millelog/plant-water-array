@@ -58,6 +58,7 @@ class SensorCreate(BaseModel):
 class SensorUpdate(BaseModel):
     sensor_id: Optional[int] = None
     name: Optional[str] = None
+    zone_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -66,6 +67,7 @@ class SensorUpdate(BaseModel):
 class Sensor(SensorBase):
     id: int
     device_id: str
+    zone_id: Optional[int] = None
     threshold: Optional[Threshold] = None
     calibration_dry: Optional[float] = None
     calibration_wet: Optional[float] = None
@@ -148,3 +150,61 @@ class FirmwareInfo(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Zone schemas
+
+class ZoneCreate(BaseModel):
+    name: str
+    sort_order: Optional[int] = 0
+
+
+class ZoneUpdate(BaseModel):
+    name: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
+class Zone(BaseModel):
+    id: int
+    name: str
+    sort_order: int
+
+    class Config:
+        from_attributes = True
+
+
+# Dashboard summary schemas
+
+class SparklinePoint(BaseModel):
+    hour: str
+    moisture: float
+
+
+class SensorSummary(BaseModel):
+    id: int
+    sensor_id: int
+    name: Optional[str] = None
+    device_id: str
+    device_name: str
+    zone_id: Optional[int] = None
+    zone_name: Optional[str] = None
+    current_moisture: Optional[float] = None
+    last_reading_time: Optional[datetime] = None
+    sparkline: List[SparklinePoint] = []
+    trend: str = "stable"  # rising, falling, stable
+    threshold_min: Optional[float] = None
+    threshold_max: Optional[float] = None
+    status: str = "no-data"  # healthy, dry, wet, no-data
+
+
+class DashboardStats(BaseModel):
+    total_devices: int
+    online_devices: int
+    total_sensors: int
+    sensors_needing_water: int
+    unread_alert_count: int
+
+
+class DashboardSummary(BaseModel):
+    stats: DashboardStats
+    sensors: List[SensorSummary]
