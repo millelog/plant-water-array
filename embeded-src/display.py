@@ -43,18 +43,6 @@ class Display:
         except Exception as e:
             print(f"OLED init failed (display not wired?): {e}")
 
-    def show_readings(self, readings):
-        """Show sensor readings. readings = [(name, moisture%), ...]"""
-        if not self.available:
-            return
-        self.oled.fill(0)
-        y = 0
-        for name, moisture in readings[:4]:  # 4 lines max on 64px display
-            label = name.replace("Moisture_", "")
-            self.oled.text(f"{label}: {moisture}%", 0, y)
-            y += 16
-        self.oled.show()
-
     def show_status(self, line1, line2=""):
         """Show a status message (e.g. 'Connected', '3 sensor(s)')."""
         if not self.available:
@@ -123,8 +111,3 @@ class Display:
 
         self.oled.show()
 
-    def clear(self):
-        if not self.available:
-            return
-        self.oled.fill(0)
-        self.oled.show()

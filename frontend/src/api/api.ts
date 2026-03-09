@@ -8,11 +8,6 @@ export const getDevices = async (): Promise<Device[]> => {
   return response.data;
 };
 
-export const createDevice = async (deviceData: { name: string; device_id: string }): Promise<Device> => {
-  const response = await axios.post(`${API_URL}/devices`, deviceData);
-  return response.data;
-};
-
 export const deleteDevice = async (deviceId: string): Promise<void> => {
   await axios.delete(`${API_URL}/devices/${deviceId}`);
 };
@@ -21,11 +16,7 @@ export const getSensors = async (deviceId?: string): Promise<Sensor[]> => {
   const response = await axios.get(`${API_URL}/sensors`, {
     params: deviceId ? { device_id: deviceId } : {}
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return response.data.map((sensor: any) => ({
-    ...sensor,
-    original: sensor
-  }));
+  return response.data;
 };
 
 export const getReadings = async (deviceId: string, sensorId: number, limit?: number): Promise<Reading[]> => {
@@ -68,11 +59,6 @@ export const setThreshold = async (sensorId: number, threshold: Threshold): Prom
   return response.data;
 };
 
-export const createSensor = async (sensorData: { device_id: string; sensor_id: number; name: string }): Promise<Sensor> => {
-  const response = await axios.post(`${API_URL}/sensors`, sensorData);
-  return response.data;
-};
-
 export const updateSensor = async (sensorId: number, sensorData: SensorUpdate): Promise<Sensor> => {
   const response = await axios.put(`${API_URL}/sensors/${sensorId}`, sensorData);
   return response.data;
@@ -99,11 +85,6 @@ export const getLatestRawReading = async (sensorId: number): Promise<LatestRawRe
 
 export const getFirmwareList = async (): Promise<FirmwareInfo[]> => {
   const response = await axios.get(`${API_URL}/firmware/`);
-  return response.data;
-};
-
-export const getLatestFirmware = async (): Promise<FirmwareInfo> => {
-  const response = await axios.get(`${API_URL}/firmware/latest`);
   return response.data;
 };
 

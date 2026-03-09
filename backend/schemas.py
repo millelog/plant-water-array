@@ -1,6 +1,6 @@
 # schemas.py
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, List
 
@@ -23,8 +23,7 @@ class Reading(ReadingBase):
     timestamp: datetime
     raw_adc: Optional[float] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ThresholdBase(BaseModel):
@@ -40,8 +39,7 @@ class Threshold(ThresholdBase):
     id: int
     sensor_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SensorBase(BaseModel):
@@ -60,8 +58,7 @@ class SensorUpdate(BaseModel):
     name: Optional[str] = None
     zone_id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Sensor(SensorBase):
@@ -72,8 +69,7 @@ class Sensor(SensorBase):
     calibration_dry: Optional[float] = None
     calibration_wet: Optional[float] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CalibrationData(BaseModel):
@@ -104,8 +100,7 @@ class Device(BaseModel):
     last_seen: Optional[datetime] = None
     sensors: List[Sensor] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AlertBase(BaseModel):
@@ -122,8 +117,7 @@ class Alert(AlertBase):
     timestamp: datetime
     read: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DeviceHeartbeat(BaseModel):
@@ -148,8 +142,7 @@ class FirmwareInfo(BaseModel):
     size_bytes: int
     notes: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Zone schemas
@@ -169,8 +162,7 @@ class Zone(BaseModel):
     name: str
     sort_order: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Dashboard summary schemas
@@ -227,8 +219,7 @@ class SystemConfigUpdate(BaseModel):
 class SystemConfig(SystemConfigBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Heartbeat response schemas

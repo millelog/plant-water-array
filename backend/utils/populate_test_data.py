@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models
 import schemas
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 
 def populate_test_data():
@@ -26,9 +26,9 @@ def populate_test_data():
         device2 = create_device(db, schemas.DeviceCreate(device_id="test_device_2", name="Test Device 2"))
 
         # Create test sensors for each device
-        sensor1 = create_sensor(db, schemas.SensorCreate(device_id=device1.id, sensor_id=1, name="Sensor 1"))
-        sensor2 = create_sensor(db, schemas.SensorCreate(device_id=device1.id, sensor_id=2, name="Sensor 2"))
-        sensor3 = create_sensor(db, schemas.SensorCreate(device_id=device2.id, sensor_id=1, name="Sensor 3"))
+        sensor1 = create_sensor(db, schemas.SensorCreate(device_id=device1.device_id, sensor_id=1, name="Sensor 1"))
+        sensor2 = create_sensor(db, schemas.SensorCreate(device_id=device1.device_id, sensor_id=2, name="Sensor 2"))
+        sensor3 = create_sensor(db, schemas.SensorCreate(device_id=device2.device_id, sensor_id=1, name="Sensor 3"))
 
         # Set thresholds for sensors
         set_threshold(db, sensor1.id, schemas.ThresholdCreate(min_moisture=20, max_moisture=80))
@@ -36,7 +36,7 @@ def populate_test_data():
         set_threshold(db, sensor3.id, schemas.ThresholdCreate(min_moisture=25, max_moisture=75))
 
         # Create test readings for each sensor
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         for i in range(50):
             timestamp = now - timedelta(hours=i)
             create_reading(db, schemas.ReadingCreate(device_id=device1.device_id, sensor_id=sensor1.sensor_id, moisture=random.randint(10, 90)))
@@ -85,8 +85,8 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
     db_device = db.query(models.Device).filter(models.Device.device_id == reading.device_id).first()
     if not db_device:
         raise ValueError("Device not found")
-    
-    db_sensor = db.query(models.Sensor).filter(models.Sensor.device_id == db_device.id, models.Sensor.sensor_id == reading.sensor_id).first()
+
+    db_sensor = db.query(models.Sensor).filter(models.Sensor.device_id == db_device.device_id, models.Sensor.sensor_id == reading.sensor_id).first()
     if not db_sensor:
         raise ValueError("Sensor not found")
 
@@ -94,7 +94,7 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
         device_id=reading.device_id,
         sensor_id=db_sensor.id,
         moisture=reading.moisture,
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
     db.add(db_reading)
     db.flush()
@@ -104,7 +104,7 @@ def create_alert(db: Session, alert: schemas.AlertCreate):
     db_alert = models.Alert(
         sensor_id=alert.sensor_id,
         message=alert.message,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         read=False
     )
     db.add(db_alert)

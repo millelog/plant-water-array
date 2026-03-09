@@ -11,11 +11,6 @@ export interface Device {
   sensors: Sensor[];
 }
 
-export interface DeviceCreate {
-  name: string;
-  device_id: string;
-}
-
 export interface Sensor {
   id: number;
   sensor_id: number;
@@ -26,12 +21,6 @@ export interface Sensor {
   calibration_dry: number | null;
   calibration_wet: number | null;
   device: Device;
-}
-
-export interface SensorCreate {
-  device_id: string;
-  sensor_id: number;
-  name?: string;
 }
 
 export interface SensorUpdate {

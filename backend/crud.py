@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session, joinedload
 import models, schemas
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import func
-import uuid
+
 import logging
 
 
