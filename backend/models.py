@@ -27,6 +27,8 @@ class Sensor(Base):
     sensor_id = Column(Integer)  # Sensor ID unique within a device
     device_id = Column(String, ForeignKey("devices.device_id"))
     name = Column(String, nullable=True)
+    calibration_dry = Column(Float, nullable=True)
+    calibration_wet = Column(Float, nullable=True)
 
     device = relationship("Device", back_populates="sensors")
     readings = relationship("Reading", back_populates="sensor")
@@ -41,6 +43,7 @@ class Reading(Base):
     sensor_id = Column(Integer, ForeignKey("sensors.id"))
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     moisture = Column(Float)
+    raw_adc = Column(Float, nullable=True)
 
     sensor = relationship("Sensor", back_populates="readings")
     device = relationship("Device")

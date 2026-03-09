@@ -95,6 +95,12 @@ const Readings: React.FC = () => {
     { Header: 'Sensor ID', accessor: 'sensor_id' },
     { Header: 'Moisture', accessor: 'moisture' },
     {
+      Header: 'Raw ADC',
+      accessor: 'raw_adc',
+      Cell: ({ value }: { value: number | null | undefined }) =>
+        value != null ? value : '--',
+    },
+    {
       Header: 'Timestamp',
       accessor: 'timestamp',
       Cell: ({ value }: { value: string }) => {

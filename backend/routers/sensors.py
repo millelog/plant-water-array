@@ -53,3 +53,22 @@ async def update_sensor(sensor_id: int, sensor_update: schemas.SensorUpdate, db:
     if updated_sensor is None:
         raise HTTPException(status_code=404, detail="Sensor not found")
     return updated_sensor
+
+
+@router.post("/{sensor_id}/calibrate", response_model=schemas.Sensor)
+async def calibrate_sensor(sensor_id: int, calibration: schemas.CalibrationData, db: Session = Depends(get_db)):
+    result = crud.set_sensor_calibration(db, sensor_id, calibration)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+    return result
+
+
+@router.get("/{sensor_id}/latest-raw")
+async def get_latest_raw(sensor_id: int, db: Session = Depends(get_db)):
+    db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
+    if db_sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+    reading = crud.get_latest_raw_reading(db, sensor_id)
+    if reading is None:
+        raise HTTPException(status_code=404, detail="No raw ADC readings found")
+    return {"raw_adc": reading.raw_adc, "timestamp": reading.timestamp}

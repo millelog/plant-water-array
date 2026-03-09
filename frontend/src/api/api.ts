@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo } from '../types';
+import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading } from '../types';
 
 const API_URL = 'http://localhost:8000';
 
@@ -66,6 +66,18 @@ export const createSensor = async (sensorData: { device_id: string; sensor_id: n
 
 export const updateSensor = async (sensorId: number, sensorData: SensorUpdate): Promise<Sensor> => {
   const response = await axios.put(`${API_URL}/sensors/${sensorId}`, sensorData);
+  return response.data;
+};
+
+// Calibration API functions
+
+export const calibrateSensor = async (sensorId: number, data: CalibrationData): Promise<Sensor> => {
+  const response = await axios.post(`${API_URL}/sensors/${sensorId}/calibrate`, data);
+  return response.data;
+};
+
+export const getLatestRawReading = async (sensorId: number): Promise<LatestRawReading> => {
+  const response = await axios.get(`${API_URL}/sensors/${sensorId}/latest-raw`);
   return response.data;
 };
 

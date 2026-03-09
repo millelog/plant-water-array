@@ -3,10 +3,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import devices, sensors, readings, alerts, firmware
-from database import init_db
+from database import init_db, upgrade_db
 
 app = FastAPI()
 init_db()
+upgrade_db()
 
 # Configure CORS
 app.add_middleware(

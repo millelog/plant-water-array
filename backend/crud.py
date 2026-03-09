@@ -65,6 +65,13 @@ def create_sensor(db: Session, sensor: schemas.SensorCreate):
     return db_sensor
 
 
+def compute_calibrated_moisture(raw_adc: float, cal_dry: float, cal_wet: float) -> float:
+    if cal_dry == cal_wet:
+        return 0.0
+    pct = ((cal_dry - raw_adc) / (cal_dry - cal_wet)) * 100.0
+    return max(0.0, min(100.0, round(pct, 1)))
+
+
 def create_reading(db: Session, reading: schemas.ReadingCreate):
     db_device = get_device_by_device_id(db, device_id=reading.device_id)
     if not db_device:
@@ -74,10 +81,19 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
     if not db_sensor:
         db_sensor = create_sensor(db, schemas.SensorCreate(device_id=reading.device_id, sensor_id=reading.sensor_id))
 
+    moisture = reading.moisture
+    if (reading.raw_adc is not None
+            and db_sensor.calibration_dry is not None
+            and db_sensor.calibration_wet is not None):
+        moisture = compute_calibrated_moisture(
+            reading.raw_adc, db_sensor.calibration_dry, db_sensor.calibration_wet
+        )
+
     db_reading = models.Reading(
         device_id=reading.device_id,
         sensor_id=db_sensor.id,
-        moisture=reading.moisture,
+        moisture=moisture,
+        raw_adc=reading.raw_adc,
         timestamp=datetime.now(timezone.utc)
     )
     db.add(db_reading)
@@ -87,14 +103,33 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
     # Check thresholds and create alerts
     if db_sensor.threshold:
         threshold = db_sensor.threshold
-        if threshold.min_moisture is not None and reading.moisture < threshold.min_moisture:
-            alert_message = f"Moisture level below minimum threshold: {reading.moisture}"
+        if threshold.min_moisture is not None and moisture < threshold.min_moisture:
+            alert_message = f"Moisture level below minimum threshold: {moisture}"
             create_alert(db, schemas.AlertCreate(sensor_id=db_sensor.id, message=alert_message))
-        if threshold.max_moisture is not None and reading.moisture > threshold.max_moisture:
-            alert_message = f"Moisture level above maximum threshold: {reading.moisture}"
+        if threshold.max_moisture is not None and moisture > threshold.max_moisture:
+            alert_message = f"Moisture level above maximum threshold: {moisture}"
             create_alert(db, schemas.AlertCreate(sensor_id=db_sensor.id, message=alert_message))
 
     return db_reading
+
+
+def set_sensor_calibration(db: Session, sensor_id: int, calibration: schemas.CalibrationData):
+    db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
+    if not db_sensor:
+        return None
+    db_sensor.calibration_dry = calibration.calibration_dry
+    db_sensor.calibration_wet = calibration.calibration_wet
+    db.commit()
+    db.refresh(db_sensor)
+    return db_sensor
+
+
+def get_latest_raw_reading(db: Session, sensor_db_id: int):
+    return (db.query(models.Reading)
+            .filter(models.Reading.sensor_id == sensor_db_id,
+                    models.Reading.raw_adc.isnot(None))
+            .order_by(models.Reading.timestamp.desc())
+            .first())
 
 
 def get_readings(db: Session, skip: int = 0, limit: int = 100):

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getSensors, createSensor, getDevices } from '../api/api';
 import DataTable from '../components/DataTable';
+import CalibrationWizard from '../components/CalibrationWizard';
 import { Sensor, SensorCreate, Device } from '../types';
 import { useSearchParams } from 'react-router-dom';
 
@@ -12,6 +13,7 @@ const Sensors: React.FC = () => {
     sensor_id: 0,
     name: '',
   });
+  const [calibratingSensor, setCalibratingSensor] = useState<Sensor | null>(null);
   const [searchParams] = useSearchParams();
 
   const fetchData = useCallback(async () => {
@@ -57,10 +59,30 @@ const Sensors: React.FC = () => {
           : 'Not Set',
     },
     {
+      Header: 'Calibration',
+      accessor: 'calibration_dry',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Cell: (_props: any, row: any) => {
+        const calibrated = row.calibration_dry !== null && row.calibration_wet !== null;
+        return calibrated
+          ? <span className="text-green-600 font-medium">Calibrated</span>
+          : <span className="text-amber-600">Not calibrated</span>;
+      },
+    },
+    {
       Header: 'Actions',
       accessor: 'actions',
-      Cell: () => (
-        <button className="text-blue-600 hover:underline">Set Threshold</button>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Cell: (_props: any, row: any) => (
+        <div className="flex gap-2">
+          <button className="text-blue-600 hover:underline">Set Threshold</button>
+          <button
+            className="text-purple-600 hover:underline"
+            onClick={() => setCalibratingSensor(row as Sensor)}
+          >
+            Calibrate
+          </button>
+        </div>
       ),
     },
   ];
@@ -113,6 +135,14 @@ const Sensors: React.FC = () => {
         </div>
       </form>
       <DataTable columns={sensorColumns} data={sensors} />
+      {calibratingSensor && (
+        <CalibrationWizard
+          sensor={calibratingSensor}
+          open={true}
+          onClose={() => setCalibratingSensor(null)}
+          onCalibrated={fetchData}
+        />
+      )}
     </div>
   );
 };

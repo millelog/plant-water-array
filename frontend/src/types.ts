@@ -22,6 +22,8 @@ export interface Sensor {
   device_id: string;
   name: string | null;
   threshold: Threshold | null;
+  calibration_dry: number | null;
+  calibration_wet: number | null;
   device: Device;
 }
 
@@ -47,6 +49,7 @@ export interface Reading {
   sensor_id: number;
   moisture: number;
   timestamp: string;
+  raw_adc?: number | null;
 }
 
 export interface Alert {
@@ -55,6 +58,16 @@ export interface Alert {
   message: string;
   timestamp: string;
   read: boolean;
+}
+
+export interface CalibrationData {
+  calibration_dry: number | null;
+  calibration_wet: number | null;
+}
+
+export interface LatestRawReading {
+  raw_adc: number;
+  timestamp: string;
 }
 
 export interface FirmwareInfo {

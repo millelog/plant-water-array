@@ -215,13 +215,15 @@ def register_sensor(device_id, sensor_name, sensor_id):
         return None
 
 
-def send_moisture_reading(device_id, sensor_id, moisture):
+def send_moisture_reading(device_id, sensor_id, moisture, raw_adc=None):
     import config
     data = {
         "device_id": device_id,
         "sensor_id": sensor_id,
         "moisture": moisture
     }
+    if raw_adc is not None:
+        data["raw_adc"] = raw_adc
     try:
         response = http_request("POST", config.SERVER_URL + "/readings", json=data)
         print(f"Moisture reading sent for sensor {sensor_id}. Server response:", response.text)
@@ -461,7 +463,7 @@ def main():
             for s in registered_sensors:
                 moisture, raw = read_moisture(s["adc"])
                 print(f"GPIO{s['pin']}: {moisture}% (raw ADC: {raw})")
-                send_moisture_reading(device_id, s["sensor_id"], moisture)
+                send_moisture_reading(device_id, s["sensor_id"], moisture, raw_adc=raw)
                 readings.append((s["name"], moisture))
 
             if display:

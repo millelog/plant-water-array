@@ -13,6 +13,7 @@ class ReadingCreate(BaseModel):
     device_id: str
     sensor_id: int
     moisture: float
+    raw_adc: Optional[float] = None
 
 
 class Reading(ReadingBase):
@@ -20,6 +21,7 @@ class Reading(ReadingBase):
     device_id: str
     sensor_id: int
     timestamp: datetime
+    raw_adc: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -65,9 +67,16 @@ class Sensor(SensorBase):
     id: int
     device_id: str
     threshold: Optional[Threshold] = None
+    calibration_dry: Optional[float] = None
+    calibration_wet: Optional[float] = None
 
     class Config:
         from_attributes = True
+
+
+class CalibrationData(BaseModel):
+    calibration_dry: Optional[float] = None
+    calibration_wet: Optional[float] = None
 
 
 class DeviceCreate(BaseModel):
