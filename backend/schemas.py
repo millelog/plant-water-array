@@ -57,6 +57,8 @@ class SensorUpdate(BaseModel):
     sensor_id: Optional[int] = None
     name: Optional[str] = None
     zone_id: Optional[int] = None
+    notes: Optional[str] = None
+    auto_log_watering: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -68,6 +70,8 @@ class Sensor(SensorBase):
     threshold: Optional[Threshold] = None
     calibration_dry: Optional[float] = None
     calibration_wet: Optional[float] = None
+    notes: Optional[str] = None
+    auto_log_watering: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -187,6 +191,7 @@ class SensorSummary(BaseModel):
     threshold_min: Optional[float] = None
     threshold_max: Optional[float] = None
     status: str = "no-data"  # healthy, dry, wet, no-data
+    days_since_watered: Optional[int] = None
 
 
 class DashboardStats(BaseModel):
@@ -208,16 +213,36 @@ class SystemConfigBase(BaseModel):
     reading_interval: int = 10
     device_timeout: int = 5
     ota_check_interval: int = 300
+    moisture_jump_threshold: float = 15.0
 
 
 class SystemConfigUpdate(BaseModel):
     reading_interval: Optional[int] = None
     device_timeout: Optional[int] = None
     ota_check_interval: Optional[int] = None
+    moisture_jump_threshold: Optional[float] = None
 
 
 class SystemConfig(SystemConfigBase):
     id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Watering log schemas
+
+class WateringLogCreate(BaseModel):
+    sensor_id: int
+    notes: Optional[str] = None
+    method: str = "manual"
+
+
+class WateringLog(BaseModel):
+    id: int
+    sensor_id: int
+    timestamp: datetime
+    notes: Optional[str] = None
+    method: str
 
     model_config = ConfigDict(from_attributes=True)
 

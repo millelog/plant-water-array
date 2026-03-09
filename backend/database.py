@@ -26,6 +26,9 @@ def upgrade_db():
             "ALTER TABLE sensors ADD COLUMN calibration_wet FLOAT",
             "ALTER TABLE readings ADD COLUMN raw_adc FLOAT",
             "ALTER TABLE sensors ADD COLUMN zone_id INTEGER REFERENCES zones(id)",
+            "ALTER TABLE sensors ADD COLUMN notes TEXT",
+            "ALTER TABLE sensors ADD COLUMN auto_log_watering BOOLEAN DEFAULT 0",
+            "ALTER TABLE system_config ADD COLUMN moisture_jump_threshold FLOAT DEFAULT 15.0",
         ]
         for sql in migrations:
             try:

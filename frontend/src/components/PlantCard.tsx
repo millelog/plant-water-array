@@ -86,6 +86,12 @@ const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange }) => {
 
       <SparklineChart data={sensor.sparkline} />
 
+      {sensor.days_since_watered !== null && (
+        <div className="text-[11px] text-text-muted font-mono">
+          {sensor.days_since_watered === 0 ? 'Watered today' : `Watered ${sensor.days_since_watered}d ago`}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mt-auto pt-1">
         {sensor.last_reading_time && (
           <span className="text-[11px] text-text-muted font-mono">

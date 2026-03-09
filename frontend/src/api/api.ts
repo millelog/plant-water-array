@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate } from '../types';
+import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate } from '../types';
 
 const API_URL = 'http://localhost:8000';
 
@@ -145,6 +145,22 @@ export const getSystemConfig = async (): Promise<SystemConfig> => {
 export const updateSystemConfig = async (data: SystemConfigUpdate): Promise<SystemConfig> => {
   const response = await axios.put(`${API_URL}/config/`, data);
   return response.data;
+};
+
+// Watering logs
+
+export const createWateringLog = async (data: WateringLogCreate): Promise<WateringLog> => {
+  const response = await axios.post(`${API_URL}/watering-logs/`, data);
+  return response.data;
+};
+
+export const getWateringLogs = async (sensorId: number, params?: { start_time?: string; end_time?: string }): Promise<WateringLog[]> => {
+  const response = await axios.get(`${API_URL}/watering-logs/`, { params: { sensor_id: sensorId, ...params } });
+  return response.data;
+};
+
+export const deleteWateringLog = async (logId: number): Promise<void> => {
+  await axios.delete(`${API_URL}/watering-logs/${logId}`);
 };
 
 // Readings cleanup

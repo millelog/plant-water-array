@@ -168,6 +168,26 @@ def create_reading(db: Session, reading: schemas.ReadingCreate):
                 alert_message = f"Moisture level above maximum threshold: {moisture}"
                 create_alert(db, schemas.AlertCreate(sensor_id=db_sensor.id, message=alert_message))
 
+    # Auto-detect watering events
+    if db_sensor.auto_log_watering:
+        prev_reading = db.query(models.Reading).filter(
+            models.Reading.sensor_id == db_sensor.id,
+            models.Reading.id != db_reading.id
+        ).order_by(models.Reading.timestamp.desc()).first()
+        if prev_reading:
+            jump = moisture - prev_reading.moisture
+            sys_config = get_system_config(db)
+            if jump >= sys_config.moisture_jump_threshold:
+                auto_note = f"Auto-detected: moisture rose from {prev_reading.moisture:.1f}% to {moisture:.1f}%"
+                auto_log = models.WateringLog(
+                    sensor_id=db_sensor.id,
+                    notes=auto_note,
+                    method=models.WateringMethod.auto,
+                    timestamp=datetime.now(timezone.utc)
+                )
+                db.add(auto_log)
+                db.commit()
+
     return db_reading
 
 
@@ -273,6 +293,8 @@ def delete_device(db: Session, device_id: str):
     sensor_ids = [s.id for s in sensors]
 
     if sensor_ids:
+        # Delete watering logs for device's sensors
+        db.query(models.WateringLog).filter(models.WateringLog.sensor_id.in_(sensor_ids)).delete(synchronize_session=False)
         # Delete alerts for device's sensors
         db.query(models.Alert).filter(models.Alert.sensor_id.in_(sensor_ids)).delete(synchronize_session=False)
         # Delete thresholds for device's sensors
@@ -485,6 +507,13 @@ def get_dashboard_summary(db: Session) -> schemas.DashboardSummary:
         else:
             status = "healthy"
 
+        # Days since last watered
+        last_watered = get_last_watering_time(db, sensor.id)
+        days_since_watered = None
+        if last_watered:
+            delta = now - last_watered.replace(tzinfo=timezone.utc) if last_watered.tzinfo is None else now - last_watered
+            days_since_watered = max(0, delta.days)
+
         sensor_summaries.append(schemas.SensorSummary(
             id=sensor.id,
             sensor_id=sensor.sensor_id,
@@ -500,6 +529,7 @@ def get_dashboard_summary(db: Session) -> schemas.DashboardSummary:
             threshold_min=threshold_min,
             threshold_max=threshold_max,
             status=status,
+            days_since_watered=days_since_watered,
         ))
 
     stats = schemas.DashboardStats(
@@ -520,3 +550,46 @@ def delete_old_readings(db: Session, older_than_days: int = 90) -> int:
     count = db.query(models.Reading).filter(models.Reading.timestamp < cutoff).delete(synchronize_session=False)
     db.commit()
     return count
+
+
+# Watering log CRUD
+
+def get_last_watering_time(db: Session, sensor_id: int):
+    log = db.query(models.WateringLog).filter(
+        models.WateringLog.sensor_id == sensor_id
+    ).order_by(models.WateringLog.timestamp.desc()).first()
+    return log.timestamp if log else None
+
+
+def create_watering_log(db: Session, log_create: schemas.WateringLogCreate):
+    sensor = db.query(models.Sensor).filter(models.Sensor.id == log_create.sensor_id).first()
+    if not sensor:
+        raise ValueError(f"Sensor with id {log_create.sensor_id} not found")
+    db_log = models.WateringLog(
+        sensor_id=log_create.sensor_id,
+        notes=log_create.notes,
+        method=log_create.method,
+        timestamp=datetime.now(timezone.utc)
+    )
+    db.add(db_log)
+    db.commit()
+    db.refresh(db_log)
+    return db_log
+
+
+def get_watering_logs_by_sensor(db: Session, sensor_id: int, start_time: datetime = None, end_time: datetime = None, skip: int = 0, limit: int = 50):
+    query = db.query(models.WateringLog).filter(models.WateringLog.sensor_id == sensor_id)
+    if start_time:
+        query = query.filter(models.WateringLog.timestamp >= start_time)
+    if end_time:
+        query = query.filter(models.WateringLog.timestamp <= end_time)
+    return query.order_by(models.WateringLog.timestamp.desc()).offset(skip).limit(limit).all()
+
+
+def delete_watering_log(db: Session, log_id: int) -> bool:
+    log = db.query(models.WateringLog).filter(models.WateringLog.id == log_id).first()
+    if not log:
+        return False
+    db.delete(log)
+    db.commit()
+    return True

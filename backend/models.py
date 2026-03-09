@@ -1,9 +1,16 @@
 # models.py
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey
+import enum
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from database import Base
+
+
+class WateringMethod(str, enum.Enum):
+    manual = "manual"
+    auto = "auto"
+    rain = "rain"
 
 
 class Device(Base):
@@ -41,10 +48,14 @@ class Sensor(Base):
     calibration_dry = Column(Float, nullable=True)
     calibration_wet = Column(Float, nullable=True)
 
+    notes = Column(String, nullable=True)
+    auto_log_watering = Column(Boolean, default=False)
+
     device = relationship("Device", back_populates="sensors")
     zone = relationship("Zone", back_populates="sensors")
     readings = relationship("Reading", back_populates="sensor")
     threshold = relationship("Threshold", uselist=False, back_populates="sensor")
+    watering_logs = relationship("WateringLog", back_populates="sensor")
 
 
 class Reading(Base):
@@ -91,6 +102,19 @@ class SystemConfig(Base):
     reading_interval = Column(Integer, default=10)       # seconds
     device_timeout = Column(Integer, default=5)           # minutes
     ota_check_interval = Column(Integer, default=300)     # seconds
+    moisture_jump_threshold = Column(Float, default=15.0)
+
+
+class WateringLog(Base):
+    __tablename__ = "watering_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sensor_id = Column(Integer, ForeignKey("sensors.id"))
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    notes = Column(String, nullable=True)
+    method = Column(Enum(WateringMethod), default=WateringMethod.manual)
+
+    sensor = relationship("Sensor", back_populates="watering_logs")
 
 
 class Firmware(Base):

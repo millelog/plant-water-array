@@ -33,3 +33,28 @@
 - Embedded: MicroPython on ESP32, captive portal provisioning, OTA updates
 - Sensor readings: simulated (real ADC code exists but no physical wiring yet)
 - All existing features working — clean git state on main branch
+
+## Session 2 — 2026-03-09 — Watering Log & Plant Notes (group: watering-log)
+- Implemented all 7 features in the watering-log feature group
+- **Backend changes:**
+  - `models.py`: WateringMethod enum, WateringLog model, Sensor.notes + auto_log_watering, SystemConfig.moisture_jump_threshold
+  - `database.py`: 3 ALTER TABLE migrations (sensors.notes, sensors.auto_log_watering, system_config.moisture_jump_threshold)
+  - `schemas.py`: WateringLogCreate/WateringLog schemas, updated Sensor/SensorSummary/SystemConfig
+  - `crud.py`: Watering log CRUD, auto-detection in create_reading(), days_since_watered in dashboard, cascade delete
+  - `routers/watering_logs.py`: New router — POST/GET/DELETE /watering-logs/
+  - `main.py`: Mounted watering_logs router
+- **Frontend changes:**
+  - `types.ts`: WateringLog/WateringLogCreate types, updated Sensor/SensorSummary/SystemConfig
+  - `api/api.ts`: createWateringLog, getWateringLogs, deleteWateringLog
+  - `LogWateringModal.tsx`: Radix Dialog with method selector (Manual/Auto/Rain) + notes
+  - `WateringTimeline.tsx`: Vertical timeline with method badges, timestamps, delete on hover
+  - `PlantDetail.tsx`: Log Watering button, plant notes section, watering timeline, auto-detect toggle
+  - `PlantCard.tsx`: "Watered Xd ago" / "Watered today" display from days_since_watered
+  - `Settings.tsx`: Auto-Watering Detection Sensitivity (moisture_jump_threshold, 5-50 range)
+- All 7 features marked passes=true in feature_list.json
+- Backend imports verified, frontend build passes (pnpm build)
+- Files: 11 modified, 3 new (14 total)
+
+### Current State
+- Backend: 9 routers (added watering_logs)
+- Next priority group: notifications (Push Notifications via ntfy.sh)

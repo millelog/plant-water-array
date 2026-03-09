@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Sensor, Reading, Alert, Zone, Threshold } from '../types';
+import { Sensor, Reading, Alert, Zone, Threshold, WateringLog as WateringLogType } from '../types';
 import {
   getSensorDetail,
   getReadings,
@@ -10,10 +10,14 @@ import {
   getThreshold,
   updateSensor,
   getZones,
+  getWateringLogs,
+  deleteWateringLog,
 } from '../api/api';
 import InlineEdit from '../components/InlineEdit';
 import SensorReadingsGraph from '../components/SensorReadingsGraph';
 import AlertCard from '../components/AlertCard';
+import LogWateringModal from '../components/LogWateringModal';
+import WateringTimeline from '../components/WateringTimeline';
 
 type TimeRange = '24h' | '7d' | '30d';
 
@@ -28,6 +32,11 @@ const PlantDetail: React.FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
   const [loading, setLoading] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
+  const [wateringLogs, setWateringLogs] = useState<WateringLogType[]>([]);
+  const [showWateringModal, setShowWateringModal] = useState(false);
+  const [plantNotes, setPlantNotes] = useState('');
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
 
   const sensorId = Number(sensorDbId);
 
@@ -36,6 +45,7 @@ const PlantDetail: React.FC = () => {
     try {
       const s = await getSensorDetail(sensorId);
       setSensor(s);
+      setPlantNotes(s.notes || '');
 
       // Load threshold
       try {
@@ -71,6 +81,16 @@ const PlantDetail: React.FC = () => {
     }
   }, [sensorDbId, sensorId]);
 
+  const loadWateringLogs = useCallback(async () => {
+    if (!sensorDbId) return;
+    try {
+      const logs = await getWateringLogs(sensorId);
+      setWateringLogs(logs);
+    } catch (error) {
+      console.error('Error loading watering logs:', error);
+    }
+  }, [sensorDbId, sensorId]);
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -86,8 +106,9 @@ const PlantDetail: React.FC = () => {
     if (sensor) {
       loadReadings();
       loadAlerts();
+      loadWateringLogs();
     }
-  }, [sensor, loadReadings, loadAlerts]);
+  }, [sensor, loadReadings, loadAlerts, loadWateringLogs]);
 
   const handleRename = async (newName: string) => {
     await updateSensor(sensorId, { name: newName });
@@ -108,6 +129,23 @@ const PlantDetail: React.FC = () => {
   const handleDismissAlert = async (alertId: number) => {
     await markAlertAsRead(alertId);
     await loadAlerts();
+  };
+
+  const handleSaveNotes = async () => {
+    await updateSensor(sensorId, { notes: notesDraft.trim() || undefined });
+    setPlantNotes(notesDraft.trim());
+    setEditingNotes(false);
+  };
+
+  const handleToggleAutoLog = async () => {
+    if (!sensor) return;
+    await updateSensor(sensorId, { auto_log_watering: !sensor.auto_log_watering });
+    await loadSensor();
+  };
+
+  const handleDeleteWateringLog = async (logId: number) => {
+    await deleteWateringLog(logId);
+    await loadWateringLogs();
   };
 
   if (loading) {
@@ -157,6 +195,9 @@ const PlantDetail: React.FC = () => {
             </select>
           </div>
         </div>
+        <button onClick={() => setShowWateringModal(true)} className="btn-primary shrink-0">
+          Log Watering
+        </button>
       </div>
 
       {/* Current Reading */}
@@ -245,6 +286,54 @@ const PlantDetail: React.FC = () => {
         )}
       </div>
 
+      {/* Plant Notes */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="section-title">Plant Notes</div>
+          {!editingNotes && (
+            <button
+              onClick={() => { setNotesDraft(plantNotes); setEditingNotes(true); }}
+              className="text-xs text-accent hover:text-accent-dim font-medium"
+            >
+              {plantNotes ? 'Edit' : 'Add notes'}
+            </button>
+          )}
+        </div>
+        {editingNotes ? (
+          <div>
+            <textarea
+              value={notesDraft}
+              onChange={(e) => setNotesDraft(e.target.value)}
+              className="input w-full h-24 resize-none mb-3"
+              placeholder="e.g. Pothos in east window, likes indirect light..."
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setEditingNotes(false)} className="btn-ghost text-xs">Cancel</button>
+              <button onClick={handleSaveNotes} className="btn-primary text-xs">Save</button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-text-secondary whitespace-pre-wrap">
+            {plantNotes || <span className="italic text-text-muted">No notes yet</span>}
+          </p>
+        )}
+      </div>
+
+      {/* Watering History */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="section-title">Watering History</div>
+          <button
+            onClick={() => setShowWateringModal(true)}
+            className="text-xs text-accent hover:text-accent-dim font-medium"
+          >
+            Log Watering
+          </button>
+        </div>
+        <WateringTimeline logs={wateringLogs} onDelete={handleDeleteWateringLog} />
+      </div>
+
       {/* Recent Alerts */}
       {alerts.length > 0 && (
         <div>
@@ -292,6 +381,22 @@ const PlantDetail: React.FC = () => {
                 <span className="data-value">{sensor.calibration_wet}</span>
               </div>
             )}
+            <div className="flex justify-between py-2 border-b border-surface-border">
+              <div>
+                <span className="text-text-muted">Auto-detect watering</span>
+                <div className="text-[10px] text-text-muted mt-0.5">Log events when moisture spikes</div>
+              </div>
+              <button
+                onClick={handleToggleAutoLog}
+                className={`relative w-10 h-5 rounded-full transition-colors ${
+                  sensor.auto_log_watering ? 'bg-accent' : 'bg-canvas-200 border border-surface-border'
+                }`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                  sensor.auto_log_watering ? 'translate-x-5' : 'translate-x-0.5'
+                }`} />
+              </button>
+            </div>
             <div className="pt-2">
               <Link to="/sensors" className="text-xs text-accent hover:text-accent-dim">
                 Calibration Wizard &rarr;
@@ -300,6 +405,14 @@ const PlantDetail: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Log Watering Modal */}
+      <LogWateringModal
+        sensorId={sensorId}
+        open={showWateringModal}
+        onClose={() => setShowWateringModal(false)}
+        onLogged={loadWateringLogs}
+      />
     </div>
   );
 };

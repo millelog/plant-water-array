@@ -20,12 +20,16 @@ export interface Sensor {
   threshold: Threshold | null;
   calibration_dry: number | null;
   calibration_wet: number | null;
+  notes: string | null;
+  auto_log_watering: boolean;
   device: Device;
 }
 
 export interface SensorUpdate {
   name?: string;
   zone_id?: number | null;
+  notes?: string;
+  auto_log_watering?: boolean;
 }
 
 export interface Threshold {
@@ -97,6 +101,7 @@ export interface SensorSummary {
   threshold_min: number | null;
   threshold_max: number | null;
   status: 'healthy' | 'dry' | 'wet' | 'no-data';
+  days_since_watered: number | null;
 }
 
 export interface DashboardStats {
@@ -117,10 +122,26 @@ export interface SystemConfig {
   reading_interval: number;
   device_timeout: number;
   ota_check_interval: number;
+  moisture_jump_threshold: number;
 }
 
 export interface SystemConfigUpdate {
   reading_interval?: number;
   device_timeout?: number;
   ota_check_interval?: number;
+  moisture_jump_threshold?: number;
+}
+
+export interface WateringLog {
+  id: number;
+  sensor_id: number;
+  timestamp: string;
+  notes: string | null;
+  method: string;
+}
+
+export interface WateringLogCreate {
+  sensor_id: number;
+  notes?: string;
+  method?: string;
 }

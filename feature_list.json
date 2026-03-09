@@ -14,43 +14,43 @@
           "id": "watering-log-model",
           "category": "backend",
           "description": "Add WateringLog model (id, sensor_id FK, timestamp, notes, method enum [manual/auto/rain]). Add to models.py, create schema in schemas.py.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "watering-log-crud",
           "category": "backend",
           "description": "CRUD operations: create_watering_log, get_watering_logs_by_sensor (with pagination + date range filter), delete_watering_log. Add to crud.py.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "watering-log-router",
           "category": "backend",
           "description": "POST /watering-logs, GET /watering-logs (filter by sensor_id, date range), DELETE /watering-logs/{id}. New router file routers/watering_logs.py, mount in main.py.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "watering-log-ui",
           "category": "frontend",
           "description": "Add 'Log Watering' button on PlantDetail page. Quick-add modal with optional notes field and method selector. Show watering history timeline below readings graph.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "watering-log-dashboard",
           "category": "frontend",
           "description": "Show 'last watered X days ago' on PlantCard component. Add days_since_watered to dashboard summary API if a watering log exists for that sensor.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "auto-watering-detection",
           "category": "full-stack",
           "description": "Auto-detect watering events from moisture data. Add per-sensor toggle (auto_log_watering bool on Sensor model, default False). Backend: in crud.create_reading(), when enabled, compare new moisture to the previous reading — if moisture jumps up by more than a configurable threshold (e.g. 15% within one reading interval), automatically create a WateringLog entry with method='auto' and a note like 'Auto-detected: moisture rose from 32% to 68%'. Add moisture_jump_threshold field to SystemConfig (default 15). Frontend: toggle on PlantDetail sensor info section, sensitivity slider on Settings page.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "plant-notes",
           "category": "full-stack",
           "description": "Add a notes text field to the Sensor model (nullable string). API: include in sensor update endpoint. UI: editable notes area on PlantDetail page below sensor info.",
-          "passes": false
+          "passes": true
         }
       ]
     },
