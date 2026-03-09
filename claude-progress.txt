@@ -1,0 +1,35 @@
+# Claude Agent Progress Log
+# ============================================================
+# This file tracks incremental progress by Claude Code agents.
+# Each agent session should:
+#   1. Read this file + git log to understand current state
+#   2. Read feature_list.json to pick the next feature group
+#   3. Implement all features in the chosen group
+#   4. Commit with descriptive message
+#   5. Append a progress entry below
+#   6. Update feature_list.json (set passes=true for completed features)
+# ============================================================
+
+## Session 1 — 2026-03-09 — Initialization
+- Reviewed entire codebase (backend, frontend, embedded)
+- Created feature_list.json with 10 feature groups (41 features total)
+- Created this progress file
+- Feature groups prioritized for home lab usefulness:
+  1. Watering Log & Plant Notes (most useful for daily plant care)
+  2. Push Notifications via ntfy.sh (stop checking dashboard manually)
+  3. Historical Data & Insights (understand watering patterns)
+  4. Dashboard Quality-of-Life (sort, filter, quick actions)
+  5. Mobile Experience (use on phone while watering)
+  6. Database Backup & Maintenance (keep homelab running)
+  7. Sensor & Device Diagnostics (troubleshoot hardware)
+  8. Environment & Configuration Cleanup (easier deployment)
+  9. Multi-Plant Comparison (advanced visualization)
+  10. Light/Dark Mode Toggle (preference)
+- No code changes made — this was a planning session
+
+### Current State
+- Backend: FastAPI + SQLite, fully functional (8 routers, dashboard, OTA, alerts)
+- Frontend: React + Vite + Tailwind, "Greenhouse Control Room" dark theme
+- Embedded: MicroPython on ESP32, captive portal provisioning, OTA updates
+- Sensor readings: simulated (real ADC code exists but no physical wiring yet)
+- All existing features working — clean git state on main branch

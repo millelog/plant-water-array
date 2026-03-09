@@ -1,0 +1,361 @@
+{
+  "project": "Plant Water Array",
+  "description": "Home lab plant moisture monitoring — feature backlog for incremental agent work",
+  "instructions": "Each feature group is scoped to fit within a single Claude Code Opus 4.6 context window. An agent should pick ONE group, implement all features in it, commit progress, and update this file by setting passes=true on completed features. Do NOT remove or edit feature descriptions — only change the passes field. Follow the existing design system (Greenhouse Control Room dark theme, see frontend/DESIGN_SYSTEM.md). Backend changes need corresponding frontend UI. Test that the app builds (pnpm build) before marking done.",
+  "feature_groups": [
+    {
+      "group_id": "watering-log",
+      "name": "Watering Log & Plant Notes",
+      "priority": 1,
+      "description": "Let users record when they watered a plant, attach notes, and optionally auto-detect watering events from sharp moisture increases. This is the most requested home-user feature — the system tracks moisture but has no way to log human actions.",
+      "scope": "Backend model + CRUD + API routes, frontend UI on PlantDetail page + new log page",
+      "features": [
+        {
+          "id": "watering-log-model",
+          "category": "backend",
+          "description": "Add WateringLog model (id, sensor_id FK, timestamp, notes, method enum [manual/auto/rain]). Add to models.py, create schema in schemas.py.",
+          "passes": false
+        },
+        {
+          "id": "watering-log-crud",
+          "category": "backend",
+          "description": "CRUD operations: create_watering_log, get_watering_logs_by_sensor (with pagination + date range filter), delete_watering_log. Add to crud.py.",
+          "passes": false
+        },
+        {
+          "id": "watering-log-router",
+          "category": "backend",
+          "description": "POST /watering-logs, GET /watering-logs (filter by sensor_id, date range), DELETE /watering-logs/{id}. New router file routers/watering_logs.py, mount in main.py.",
+          "passes": false
+        },
+        {
+          "id": "watering-log-ui",
+          "category": "frontend",
+          "description": "Add 'Log Watering' button on PlantDetail page. Quick-add modal with optional notes field and method selector. Show watering history timeline below readings graph.",
+          "passes": false
+        },
+        {
+          "id": "watering-log-dashboard",
+          "category": "frontend",
+          "description": "Show 'last watered X days ago' on PlantCard component. Add days_since_watered to dashboard summary API if a watering log exists for that sensor.",
+          "passes": false
+        },
+        {
+          "id": "auto-watering-detection",
+          "category": "full-stack",
+          "description": "Auto-detect watering events from moisture data. Add per-sensor toggle (auto_log_watering bool on Sensor model, default False). Backend: in crud.create_reading(), when enabled, compare new moisture to the previous reading — if moisture jumps up by more than a configurable threshold (e.g. 15% within one reading interval), automatically create a WateringLog entry with method='auto' and a note like 'Auto-detected: moisture rose from 32% to 68%'. Add moisture_jump_threshold field to SystemConfig (default 15). Frontend: toggle on PlantDetail sensor info section, sensitivity slider on Settings page.",
+          "passes": false
+        },
+        {
+          "id": "plant-notes",
+          "category": "full-stack",
+          "description": "Add a notes text field to the Sensor model (nullable string). API: include in sensor update endpoint. UI: editable notes area on PlantDetail page below sensor info.",
+          "passes": false
+        }
+      ]
+    },
+    {
+      "group_id": "notifications",
+      "name": "Push Notifications via ntfy.sh",
+      "priority": 2,
+      "description": "Integrate with ntfy.sh (self-hostable push notification service, perfect for homelab). Send alerts to phone when plants need water instead of requiring dashboard checks.",
+      "scope": "Backend notification service + config, frontend settings UI",
+      "features": [
+        {
+          "id": "ntfy-config-model",
+          "category": "backend",
+          "description": "Add notification fields to SystemConfig model: ntfy_enabled (bool, default False), ntfy_server_url (str, default 'https://ntfy.sh'), ntfy_topic (str). Update schemas and config router.",
+          "passes": false
+        },
+        {
+          "id": "ntfy-send-service",
+          "category": "backend",
+          "description": "Create services/notifications.py with send_ntfy_notification(title, message, priority, tags). Use httpx or requests to POST to ntfy server. Priority mapping: dry=urgent, wet=default.",
+          "passes": false
+        },
+        {
+          "id": "ntfy-alert-integration",
+          "category": "backend",
+          "description": "Hook into alert creation in crud.py — when a new alert is created AND ntfy is enabled, fire notification with plant name, moisture %, and threshold info. Include link to dashboard.",
+          "passes": false
+        },
+        {
+          "id": "ntfy-settings-ui",
+          "category": "frontend",
+          "description": "Add Notifications section to Settings page. Fields: enable/disable toggle, server URL input, topic input. 'Send Test' button that triggers a test notification via new API endpoint POST /config/test-notification.",
+          "passes": false
+        },
+        {
+          "id": "ntfy-device-offline",
+          "category": "backend",
+          "description": "Add a periodic check (or on heartbeat miss) that sends notification when a device goes offline (last_seen exceeds device_timeout). Avoid spamming — only notify once per offline event.",
+          "passes": false
+        }
+      ]
+    },
+    {
+      "group_id": "data-insights",
+      "name": "Historical Data & Insights",
+      "priority": 3,
+      "description": "Add aggregated views and analysis of moisture data over time. Help users understand watering patterns and plant health trends.",
+      "scope": "Backend aggregation endpoints, frontend charts and summary views",
+      "features": [
+        {
+          "id": "aggregated-readings-api",
+          "category": "backend",
+          "description": "New endpoint GET /readings/sensor/{sensor_id}/aggregated?period=daily|weekly (returns avg, min, max moisture per period). Use SQLite date functions for grouping.",
+          "passes": false
+        },
+        {
+          "id": "drying-rate-api",
+          "category": "backend",
+          "description": "New endpoint GET /readings/sensor/{sensor_id}/drying-rate. Calculate average moisture drop per hour over the last 7 days (excluding periods after watering events if watering log exists). Return rate + estimated days until dry threshold.",
+          "passes": false
+        },
+        {
+          "id": "readings-graph-timerange",
+          "category": "frontend",
+          "description": "Add time range selector to SensorReadingsGraph component: 24h, 7d, 30d, All. Currently shows all readings which gets dense. Use aggregated endpoint for 30d+ views.",
+          "passes": false
+        },
+        {
+          "id": "plant-detail-insights",
+          "category": "frontend",
+          "description": "Add insights card on PlantDetail page showing: average moisture (7d), drying rate (% per day), estimated days until needs water, total watering events this month.",
+          "passes": false
+        },
+        {
+          "id": "csv-export",
+          "category": "full-stack",
+          "description": "Add 'Export CSV' button on Readings page. Backend endpoint GET /readings/export?sensor_id=X&start=&end= returns CSV file download with timestamp, moisture, raw_adc columns.",
+          "passes": false
+        }
+      ]
+    },
+    {
+      "group_id": "dashboard-enhancements",
+      "name": "Dashboard Quality-of-Life",
+      "priority": 4,
+      "description": "Improve the main dashboard experience for daily home use — make it the one-glance view for plant health.",
+      "scope": "Frontend dashboard and component changes, minor backend additions",
+      "features": [
+        {
+          "id": "dashboard-sort-filter",
+          "category": "frontend",
+          "description": "Add sort options to dashboard: by moisture level (driest first), by name, by zone. Add filter: show all / needs water only / healthy only. Persist selection in localStorage.",
+          "passes": false
+        },
+        {
+          "id": "plant-card-last-watered",
+          "category": "frontend",
+          "description": "If watering log feature exists, show 'Watered 3d ago' on PlantCard. If no watering log, show nothing (don't show 'Never' — that's noise).",
+          "passes": false
+        },
+        {
+          "id": "dashboard-weather-widget",
+          "category": "frontend",
+          "description": "Optional weather widget in dashboard header. Use Open-Meteo free API (no key needed) with lat/lon from Settings. Show current temp and humidity — relevant context for plant care. If no location configured, hide widget entirely.",
+          "passes": false
+        },
+        {
+          "id": "fullscreen-kiosk-mode",
+          "category": "frontend",
+          "description": "Add kiosk mode toggle (button in navbar). Hides sidebar and navbar, shows just plant cards in a large grid. Auto-cycles through zones every 30s. Good for a wall-mounted tablet display.",
+          "passes": false
+        },
+        {
+          "id": "dashboard-quick-actions",
+          "category": "frontend",
+          "description": "Add quick action buttons on PlantCard hover/tap: 'Log Watering' (if watering log feature exists), 'Set Threshold', 'View History'. Reduces clicks to common actions.",
+          "passes": false
+        }
+      ]
+    },
+    {
+      "group_id": "mobile-ux",
+      "name": "Mobile Experience",
+      "priority": 5,
+      "description": "Make the dashboard usable on a phone. Currently functional but not optimized for mobile — sidebar takes too much space, tap targets are small.",
+      "scope": "Frontend responsive design, layout changes",
+      "features": [
+        {
+          "id": "mobile-sidebar",
+          "category": "frontend",
+          "description": "Collapsible sidebar on mobile (<768px): hamburger button in navbar, slide-in overlay with backdrop. Auto-close on route change. Currently sidebar is always visible at 240px.",
+          "passes": false
+        },
+        {
+          "id": "mobile-plant-cards",
+          "category": "frontend",
+          "description": "Stack PlantCards single-column on mobile with larger tap targets. Show moisture bar more prominently. Ensure sparkline is readable at mobile widths.",
+          "passes": false
+        },
+        {
+          "id": "mobile-bottom-nav",
+          "category": "frontend",
+          "description": "Add bottom navigation bar on mobile (Dashboard, Alerts, Settings) — common mobile pattern. Hide sidebar completely on mobile in favor of bottom nav.",
+          "passes": false
+        },
+        {
+          "id": "pwa-manifest",
+          "category": "frontend",
+          "description": "Add PWA manifest.json and service worker registration so the app can be 'installed' on phone home screen. App icon, splash screen, standalone display mode. Offline page showing last cached data.",
+          "passes": false
+        }
+      ]
+    },
+    {
+      "group_id": "backup-maintenance",
+      "name": "Database Backup & Maintenance",
+      "priority": 6,
+      "description": "SQLite database management for a home server that should just keep running without manual intervention.",
+      "scope": "Backend endpoints and scheduled tasks, frontend settings UI",
+      "features": [
+        {
+          "id": "db-backup-endpoint",
+          "category": "backend",
+          "description": "Add GET /admin/backup endpoint that returns the SQLite database file as a download. Use SQLite online backup API (connection.backup()) for a safe copy while DB is in use.",
+          "passes": false
+        },
+        {
+          "id": "db-backup-ui",
+          "category": "frontend",
+          "description": "Add 'Download Backup' button to Settings page under Data Maintenance section. Shows database size and last backup time.",
+          "passes": false
+        },
+        {
+          "id": "auto-cleanup-config",
+          "category": "full-stack",
+          "description": "Add retention_days field to SystemConfig (default 90). Show in Settings with explanation. Backend: add startup task or periodic check that calls delete_old_readings automatically.",
+          "passes": false
+        },
+        {
+          "id": "db-stats-endpoint",
+          "category": "full-stack",
+          "description": "Add GET /admin/stats endpoint: total readings count, database file size, oldest reading date, readings per day average. Show on Settings page as 'Database Health' section.",
+          "passes": false
+        }
+      ]
+    },
+    {
+      "group_id": "sensor-diagnostics",
+      "name": "Sensor & Device Diagnostics",
+      "priority": 7,
+      "description": "Help troubleshoot hardware issues — when a sensor stops reporting or gives weird values, make it easy to figure out why.",
+      "scope": "Backend diagnostic endpoints, frontend device detail improvements",
+      "features": [
+        {
+          "id": "device-detail-page",
+          "category": "frontend",
+          "description": "Add a Device Detail page (route: /devices/:deviceId). Show: device info (IP, MAC, firmware, last seen), list of sensors on this device with current readings, uptime tracking, recent heartbeat history.",
+          "passes": false
+        },
+        {
+          "id": "heartbeat-history",
+          "category": "backend",
+          "description": "Add HeartbeatLog model (device_id, timestamp, ip_address, firmware_version). Log each heartbeat. New endpoint GET /devices/{device_id}/heartbeats (last 50). Helps diagnose connectivity issues.",
+          "passes": false
+        },
+        {
+          "id": "sensor-health-indicators",
+          "category": "frontend",
+          "description": "On Sensors page, show health indicators: reading frequency (is it reporting at expected interval?), ADC range check (stuck at 0 or 4095 = broken sensor), last N readings variance (flatline = suspicious).",
+          "passes": false
+        },
+        {
+          "id": "raw-adc-debug-view",
+          "category": "frontend",
+          "description": "Add 'Debug' toggle on PlantDetail page that shows raw ADC values alongside moisture %, calibration bounds as reference lines on the graph, and a table of recent raw values. Helps with calibration.",
+          "passes": false
+        }
+      ]
+    },
+    {
+      "group_id": "env-config",
+      "name": "Environment & Configuration Cleanup",
+      "priority": 8,
+      "description": "Move hardcoded values to environment variables and make the system easier to configure on first setup.",
+      "scope": "Backend .env support, frontend env vars, documentation",
+      "features": [
+        {
+          "id": "backend-dotenv",
+          "category": "backend",
+          "description": "Create .env.example with DATABASE_URL, HOST, PORT, CORS_ORIGINS. Load in database.py and main.py via python-dotenv (already in requirements). Replace hardcoded values.",
+          "passes": false
+        },
+        {
+          "id": "frontend-env-api-url",
+          "category": "frontend",
+          "description": "Replace hardcoded 'http://localhost:8000' in api.ts with import.meta.env.VITE_API_URL. Add .env.example with VITE_API_URL=http://localhost:8000. Document in CLAUDE.md.",
+          "passes": false
+        },
+        {
+          "id": "cors-from-env",
+          "category": "backend",
+          "description": "Read CORS_ORIGINS from .env (comma-separated). Default to '*' for backwards compatibility. Allows restricting access when desired.",
+          "passes": false
+        },
+        {
+          "id": "docker-compose",
+          "category": "devops",
+          "description": "Add docker-compose.yml that runs backend + frontend together. Backend: Python image, mount backend/, expose 8000. Frontend: Node image, build + serve static, expose 80. Shared .env file. Makes deployment on homelab trivial.",
+          "passes": false
+        }
+      ]
+    },
+    {
+      "group_id": "multi-graph",
+      "name": "Multi-Plant Comparison & Visualization",
+      "priority": 9,
+      "description": "Compare moisture trends across multiple plants on one chart. Useful for understanding which plants dry out faster and optimizing watering schedules.",
+      "scope": "Backend multi-sensor query endpoint, frontend comparison page",
+      "features": [
+        {
+          "id": "multi-sensor-readings-api",
+          "category": "backend",
+          "description": "New endpoint GET /readings/compare?sensor_ids=1,2,3&hours=168 returns time-aligned readings for multiple sensors. Aggregate to hourly if >24h range to keep response size reasonable.",
+          "passes": false
+        },
+        {
+          "id": "comparison-chart-page",
+          "category": "frontend",
+          "description": "New 'Compare' page (add to sidebar under Dashboard). Multi-select sensors (checkboxes), time range picker, overlaid Recharts LineChart with color-coded lines per sensor. Legend with sensor names.",
+          "passes": false
+        },
+        {
+          "id": "zone-aggregate-chart",
+          "category": "frontend",
+          "description": "On dashboard, add expandable zone-level chart showing average moisture across all sensors in that zone over time. Quick visual for 'is this room getting enough water overall?'",
+          "passes": false
+        }
+      ]
+    },
+    {
+      "group_id": "light-mode",
+      "name": "Light/Dark Mode Toggle",
+      "priority": 10,
+      "description": "Add a light mode alternative to the dark Greenhouse theme. Some users prefer light mode, especially on phones in bright environments.",
+      "scope": "Frontend CSS variables, theme context, settings toggle",
+      "features": [
+        {
+          "id": "css-theme-variables",
+          "category": "frontend",
+          "description": "Refactor index.css to use CSS custom properties for all colors (--canvas-base, --surface-base, --text-primary, etc). Define :root (dark) and .light-theme class with light equivalents. Update all Tailwind config references.",
+          "passes": false
+        },
+        {
+          "id": "theme-context",
+          "category": "frontend",
+          "description": "Create ThemeContext with useTheme hook. Stores preference in localStorage. Applies .light-theme class to document root. Defaults to dark (matching current design).",
+          "passes": false
+        },
+        {
+          "id": "theme-toggle-ui",
+          "category": "frontend",
+          "description": "Add sun/moon toggle button in navbar next to alert bell. Smooth transition between themes (CSS transition on background-color, color).",
+          "passes": false
+        }
+      ]
+    }
+  ]
+}
