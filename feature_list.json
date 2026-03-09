@@ -182,25 +182,25 @@
           "id": "mobile-sidebar",
           "category": "frontend",
           "description": "Collapsible sidebar on mobile (<768px): hamburger button in navbar, slide-in overlay with backdrop. Auto-close on route change. Currently sidebar is always visible at 240px.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "mobile-plant-cards",
           "category": "frontend",
           "description": "Stack PlantCards single-column on mobile with larger tap targets. Show moisture bar more prominently. Ensure sparkline is readable at mobile widths.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "mobile-bottom-nav",
           "category": "frontend",
           "description": "Add bottom navigation bar on mobile (Dashboard, Alerts, Settings) — common mobile pattern. Hide sidebar completely on mobile in favor of bottom nav.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "pwa-manifest",
           "category": "frontend",
           "description": "Add PWA manifest.json and service worker registration so the app can be 'installed' on phone home screen. App icon, splash screen, standalone display mode. Offline page showing last cached data.",
-          "passes": false
+          "passes": true
         }
       ]
     },

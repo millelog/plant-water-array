@@ -140,7 +140,7 @@
 
   /* Moisture bar */
   .moisture-bar {
-    @apply relative h-2 rounded-full overflow-hidden bg-canvas-200;
+    @apply relative rounded-full overflow-hidden bg-canvas-200;
   }
   .moisture-bar-fill {
     @apply absolute inset-y-0 left-0 rounded-full transition-all duration-500;

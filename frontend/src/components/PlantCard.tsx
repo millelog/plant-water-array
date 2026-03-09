@@ -55,7 +55,7 @@ const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange, onRefresh }
   return (
     <>
       <div
-        className="card p-4 flex flex-col gap-3 hover:shadow-card-hover group relative overflow-hidden"
+        className="card p-5 md:p-4 flex flex-col gap-3 hover:shadow-card-hover group relative overflow-hidden"
         onTouchStart={() => setShowActions(prev => !prev)}
       >
         <div className="flex items-start justify-between gap-2">
@@ -76,12 +76,12 @@ const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange, onRefresh }
         {sensor.current_moisture !== null ? (
           <>
             <div className="flex items-baseline gap-2">
-              <span className={`text-2xl font-mono font-bold ${getMoistureColor(sensor.current_moisture)}`}>
+              <span className={`text-3xl md:text-2xl font-mono font-bold ${getMoistureColor(sensor.current_moisture)}`}>
                 {sensor.current_moisture.toFixed(1)}%
               </span>
               {getTrendArrow(sensor.trend)}
             </div>
-            <div className="moisture-bar">
+            <div className="moisture-bar h-3 md:h-2">
               <div
                 className="moisture-bar-fill"
                 style={{ width: `${Math.min(100, Math.max(0, sensor.current_moisture))}%` }}
@@ -108,7 +108,7 @@ const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange, onRefresh }
           )}
           <Link
             to={`/plant/${sensor.id}`}
-            className="text-xs text-accent hover:text-accent-dim font-medium transition-colors ml-auto"
+            className="text-xs text-accent hover:text-accent-dim font-medium transition-colors ml-auto py-2 md:py-0"
           >
             Details &rarr;
           </Link>
@@ -118,21 +118,21 @@ const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange, onRefresh }
         <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-canvas-50 via-canvas-50/95 to-transparent pt-8 pb-3 px-4 flex items-end justify-center gap-2 transition-opacity ${showActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto'}`}>
           <button
             onClick={(e) => { e.stopPropagation(); setShowWateringModal(true); }}
-            className="px-3 py-1.5 rounded-lg text-xs font-mono bg-accent-glow text-accent border border-accent/20 hover:bg-accent hover:text-canvas transition-colors"
+            className="px-4 py-2 md:px-3 md:py-1.5 rounded-lg text-xs font-mono bg-accent-glow text-accent border border-accent/20 hover:bg-accent hover:text-canvas transition-colors"
           >
             Log Watering
           </button>
           <Link
             to={`/plant/${sensor.id}#threshold`}
             onClick={(e) => e.stopPropagation()}
-            className="px-3 py-1.5 rounded-lg text-xs font-mono text-text-muted border border-surface-border hover:text-text hover:bg-canvas-200 transition-colors"
+            className="px-4 py-2 md:px-3 md:py-1.5 rounded-lg text-xs font-mono text-text-muted border border-surface-border hover:text-text hover:bg-canvas-200 transition-colors"
           >
             Threshold
           </Link>
           <Link
             to={`/plant/${sensor.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="px-3 py-1.5 rounded-lg text-xs font-mono text-text-muted border border-surface-border hover:text-text hover:bg-canvas-200 transition-colors"
+            className="px-4 py-2 md:px-3 md:py-1.5 rounded-lg text-xs font-mono text-text-muted border border-surface-border hover:text-text hover:bg-canvas-200 transition-colors"
           >
             History
           </Link>

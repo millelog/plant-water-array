@@ -95,7 +95,7 @@ const Sensors: React.FC = () => {
         return (
           <div className="flex items-center gap-2">
             <span className={`data-value text-sm font-bold ${color}`}>{m.toFixed(1)}%</span>
-            <div className="moisture-bar w-16">
+            <div className="moisture-bar h-2 w-16">
               <div className="moisture-bar-fill" style={{ width: `${Math.min(100, Math.max(0, m))}%` }} />
             </div>
           </div>

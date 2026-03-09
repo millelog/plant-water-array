@@ -34,10 +34,16 @@ Completed Feature Groups
    - Kiosk mode (fullscreen overlay, auto-cycles zones, navbar toggle, Escape to exit)
    - Quick actions on PlantCard hover/tap (Log Watering, Threshold, History)
 
+5. Mobile Experience (priority 5) — DONE
+   - Collapsible sidebar on mobile (<768px) with hamburger menu, slide-in overlay + backdrop
+   - MobileNavContext for shared isMobile/sidebarOpen state, auto-close on route change
+   - Bottom navigation bar (Dashboard, Alerts, Settings) with alert badge
+   - Mobile-optimized PlantCards: larger moisture text, taller moisture bar, bigger tap targets
+   - PWA manifest + service worker via vite-plugin-pwa (installable, offline API caching)
+   - SVG app icons (192px, 512px), Apple mobile web app meta tags, viewport-fit=cover
+
 Remaining Feature Groups
 ------------------------
-
-5. Mobile Experience (priority 5)
 6. Database Backup & Maintenance (priority 6)
 7. Sensor & Device Diagnostics (priority 7)
 8. Environment & Configuration Cleanup (priority 8)

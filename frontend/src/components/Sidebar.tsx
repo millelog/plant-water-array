@@ -9,6 +9,7 @@ import {
   ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
 import { useAlerts } from '../context/AlertContext';
+import { useMobileNav } from '../context/MobileNavContext';
 
 interface MenuItem {
   name: string;
@@ -20,6 +21,7 @@ interface MenuItem {
 const Sidebar: React.FC = () => {
   const location = useLocation();
   const { unreadCount } = useAlerts();
+  const { isMobile, sidebarOpen, setSidebarOpen } = useMobileNav();
 
   const primaryItems: MenuItem[] = [
     { name: 'Dashboard', icon: HomeIcon, path: '/' },
@@ -43,6 +45,7 @@ const Sidebar: React.FC = () => {
       <Link
         key={item.name}
         to={item.path}
+        onClick={() => isMobile && setSidebarOpen(false)}
         className={`
           flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
           transition-all duration-150 group
@@ -65,11 +68,11 @@ const Sidebar: React.FC = () => {
     );
   };
 
-  return (
-    <aside className="w-60 flex-shrink-0 bg-canvas-50 border-r border-surface-border flex flex-col">
+  const sidebarContent = (
+    <>
       {/* Brand */}
       <div className="px-5 py-6 border-b border-surface-border">
-        <Link to="/" className="flex items-center gap-3 group">
+        <Link to="/" className="flex items-center gap-3 group" onClick={() => isMobile && setSidebarOpen(false)}>
           <div className="w-9 h-9 rounded-xl bg-accent-glow border border-accent/20 flex items-center justify-center
                           group-hover:shadow-glow-accent transition-shadow duration-300">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-accent">
@@ -104,7 +107,38 @@ const Sidebar: React.FC = () => {
           v1.0 &middot; ESP32 Monitor
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  // Desktop: static sidebar
+  if (!isMobile) {
+    return (
+      <aside className="w-60 flex-shrink-0 bg-canvas-50 border-r border-surface-border flex flex-col">
+        {sidebarContent}
+      </aside>
+    );
+  }
+
+  // Mobile: overlay sidebar
+  return (
+    <>
+      {/* Backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      {/* Sliding sidebar */}
+      <aside
+        className={`fixed top-0 left-0 h-full w-60 z-50 bg-canvas-50 border-r border-surface-border flex flex-col
+          transition-transform duration-200 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 };
 
