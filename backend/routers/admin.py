@@ -16,7 +16,12 @@ router = APIRouter(
     tags=["admin"],
 )
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend.db")
+def _get_db_path() -> str:
+    db_url = os.getenv("DATABASE_URL", "sqlite:///./backend.db")
+    path = db_url.replace("sqlite:///", "", 1)
+    return os.path.abspath(path)
+
+DB_PATH = _get_db_path()
 
 
 @router.get("/backup")

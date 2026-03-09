@@ -65,8 +65,19 @@ Completed Feature Groups
    - Raw ADC values table (last 20 readings) with calibration bounds display
    - Cascade delete updated to clean up heartbeat logs
 
+8. Environment & Configuration Cleanup (priority 8) — DONE
+   - backend/.env.example with DATABASE_URL, HOST, PORT, CORS_ORIGINS, FIRMWARE_STORAGE_PATH
+   - python-dotenv loaded in database.py; all hardcoded values replaced with env vars
+   - CORS_ORIGINS parsed from env (comma-separated, default '*')
+   - Frontend API_URL from VITE_API_URL env var (import.meta.env)
+   - admin.py DB_PATH derived from DATABASE_URL env var
+   - firmware.py FIRMWARE_STORAGE_PATH from env var
+   - Backend Dockerfile (python:3.12-slim, /data volume for DB + firmware)
+   - Frontend Dockerfile (multi-stage: node build + nginx serve, SPA routing)
+   - docker-compose.yml (backend + frontend, named volume, configurable ports)
+   - __main__ block in main.py for direct `python main.py` execution
+
 Remaining Feature Groups
 ------------------------
-8. Environment & Configuration Cleanup (priority 8)
 9. Multi-Plant Comparison & Visualization (priority 9)
 10. Light/Dark Mode Toggle (priority 10)

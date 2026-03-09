@@ -1,5 +1,6 @@
 # main.py
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import devices, sensors, readings, alerts, firmware, zones, dashboard, config, watering_logs, admin
@@ -11,9 +12,12 @@ init_db()
 upgrade_db()
 
 # Configure CORS
+cors_origins_raw = os.getenv("CORS_ORIGINS", "*")
+cors_origins = [o.strip() for o in cors_origins_raw.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,3 +56,10 @@ async def auto_cleanup_old_readings():
 @app.get("/ping")
 async def ping():
     return {"message": "pong"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("main:app", host=host, port=port)

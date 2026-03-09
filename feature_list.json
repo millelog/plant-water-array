@@ -281,25 +281,25 @@
           "id": "backend-dotenv",
           "category": "backend",
           "description": "Create .env.example with DATABASE_URL, HOST, PORT, CORS_ORIGINS. Load in database.py and main.py via python-dotenv (already in requirements). Replace hardcoded values.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "frontend-env-api-url",
           "category": "frontend",
           "description": "Replace hardcoded 'http://localhost:8000' in api.ts with import.meta.env.VITE_API_URL. Add .env.example with VITE_API_URL=http://localhost:8000. Document in CLAUDE.md.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "cors-from-env",
           "category": "backend",
           "description": "Read CORS_ORIGINS from .env (comma-separated). Default to '*' for backwards compatibility. Allows restricting access when desired.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "docker-compose",
           "category": "devops",
           "description": "Add docker-compose.yml that runs backend + frontend together. Backend: Python image, mount backend/, expose 8000. Frontend: Node image, build + serve static, expose 80. Shared .env file. Makes deployment on homelab trivial.",
-          "passes": false
+          "passes": true
         }
       ]
     },

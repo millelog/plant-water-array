@@ -16,7 +16,10 @@ router = APIRouter(
     tags=["firmware"],
 )
 
-FIRMWARE_STORAGE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "firmware_storage")
+FIRMWARE_STORAGE = os.getenv(
+    "FIRMWARE_STORAGE_PATH",
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "firmware_storage"),
+)
 
 
 def ensure_storage_dir(version: str = None):

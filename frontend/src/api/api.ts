@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate, AggregatedReadingsResponse, DryingRateResponse, DatabaseStats, HeartbeatLogEntry, SensorHealthIndicator } from '../types';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const getDevices = async (): Promise<Device[]> => {
   const response = await axios.get(`${API_URL}/devices`);
