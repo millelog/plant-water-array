@@ -28,6 +28,27 @@ async def read_sensors(device_id: Optional[str] = None, db: Session = Depends(ge
     return crud.get_sensors(db)
 
 
+@router.get("/health/batch", response_model=List[schemas.SensorHealthIndicator])
+async def get_all_sensor_health(db: Session = Depends(get_db)):
+    sys_config = crud.get_system_config(db)
+    expected = sys_config.reading_interval
+    sensors = crud.get_sensors(db)
+    results = []
+    for s in sensors:
+        health = crud.compute_sensor_health(db, s.id, expected)
+        results.append(health)
+    return results
+
+
+@router.get("/{sensor_id}/health", response_model=schemas.SensorHealthIndicator)
+async def get_sensor_health(sensor_id: int, db: Session = Depends(get_db)):
+    db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
+    if db_sensor is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+    sys_config = crud.get_system_config(db)
+    return crud.compute_sensor_health(db, sensor_id, sys_config.reading_interval)
+
+
 @router.get("/{sensor_id}/detail", response_model=schemas.Sensor)
 async def get_sensor_detail(sensor_id: int, db: Session = Depends(get_db)):
     db_sensor = crud.get_sensor_by_db_id(db, sensor_id)

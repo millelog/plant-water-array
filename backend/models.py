@@ -26,6 +26,19 @@ class Device(Base):
     offline_notified = Column(Boolean, default=False)
 
     sensors = relationship("Sensor", back_populates="device")
+    heartbeat_logs = relationship("HeartbeatLog", back_populates="device")
+
+
+class HeartbeatLog(Base):
+    __tablename__ = "heartbeat_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    device_id = Column(String, ForeignKey("devices.device_id"), index=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    ip_address = Column(String, nullable=True)
+    firmware_version = Column(String, nullable=True)
+
+    device = relationship("Device", back_populates="heartbeat_logs")
 
 
 class Zone(Base):

@@ -42,6 +42,7 @@ const PlantDetail: React.FC = () => {
   const [plantNotes, setPlantNotes] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState('');
+  const [debugMode, setDebugMode] = useState(false);
 
   const sensorId = Number(sensorDbId);
 
@@ -279,7 +280,17 @@ const PlantDetail: React.FC = () => {
       <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="section-title">History</div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center">
+            <button
+              onClick={() => setDebugMode(!debugMode)}
+              className={`px-3 py-1 rounded-lg text-xs font-mono transition-colors mr-2 ${
+                debugMode
+                  ? 'bg-soil-glow text-soil border border-soil/20'
+                  : 'text-text-muted hover:text-text hover:bg-canvas-200'
+              }`}
+            >
+              Debug
+            </button>
             {(['24h', '7d', '30d'] as TimeRange[]).map(range => (
               <button
                 key={range}
@@ -298,9 +309,44 @@ const PlantDetail: React.FC = () => {
         {aggregatedData && aggregatedData.length > 0 ? (
           <SensorReadingsGraph aggregatedData={aggregatedData} />
         ) : readings.length > 0 ? (
-          <SensorReadingsGraph readings={readings} />
+          <SensorReadingsGraph
+            readings={readings}
+            debugMode={debugMode}
+            calibrationDry={sensor.calibration_dry ?? undefined}
+            calibrationWet={sensor.calibration_wet ?? undefined}
+          />
         ) : (
           <div className="text-sm text-text-muted italic py-8 text-center">No readings for this period</div>
+        )}
+        {debugMode && readings.length > 0 && (
+          <div className="mt-4 border-t border-surface-border pt-4">
+            <div className="text-xs font-mono text-text-muted mb-2">Raw ADC Values (last 20)</div>
+            {sensor.calibration_dry !== null && sensor.calibration_wet !== null && (
+              <div className="text-xs text-text-muted mb-3">
+                Calibration bounds: dry = <span className="data-value">{sensor.calibration_dry}</span>, wet = <span className="data-value">{sensor.calibration_wet}</span>
+              </div>
+            )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs font-mono">
+                <thead>
+                  <tr className="text-text-muted border-b border-surface-border">
+                    <th className="text-left py-1.5 pr-4">Timestamp</th>
+                    <th className="text-right py-1.5 pr-4">Moisture %</th>
+                    <th className="text-right py-1.5">Raw ADC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {readings.slice(-20).reverse().map((r) => (
+                    <tr key={r.id} className="border-b border-surface-border/50">
+                      <td className="py-1.5 pr-4 text-text-secondary">{formatTimeAgo(r.timestamp)}</td>
+                      <td className="text-right py-1.5 pr-4 text-accent">{r.moisture.toFixed(1)}%</td>
+                      <td className="text-right py-1.5 text-soil">{r.raw_adc !== null && r.raw_adc !== undefined ? r.raw_adc : '--'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
 

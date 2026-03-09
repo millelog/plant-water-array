@@ -8,12 +8,14 @@ import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
 import Firmware from './pages/Firmware';
 import PlantDetail from './pages/PlantDetail';
+import DeviceDetail from './pages/DeviceDetail';
 
 const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="/devices" element={<Devices />} />
+      <Route path="/devices/:deviceId" element={<DeviceDetail />} />
       <Route path="/sensors" element={<Sensors />} />
       <Route path="/readings" element={<Readings />} />
       <Route path="/readings/:deviceId" element={<Readings />} />

@@ -182,6 +182,26 @@ export interface AggregatedReadingsResponse {
   data: AggregatedReadingPoint[];
 }
 
+export interface HeartbeatLogEntry {
+  id: number;
+  device_id: string;
+  timestamp: string;
+  ip_address: string | null;
+  firmware_version: string | null;
+}
+
+export interface SensorHealthIndicator {
+  sensor_db_id: number;
+  reading_frequency_ok: boolean;
+  last_reading_age_seconds: number | null;
+  expected_interval_seconds: number;
+  stuck_at_zero: boolean;
+  stuck_at_max: boolean;
+  flatline: boolean;
+  variance: number | null;
+  total_readings_checked: number;
+}
+
 export interface DryingRateResponse {
   sensor_id: number;
   rate_per_hour: number | null;

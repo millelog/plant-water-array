@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { getSensors, getDevices, getZones, getDashboardSummary, updateSensor } from '../api/api';
+import { getSensors, getDevices, getZones, getDashboardSummary, updateSensor, getSensorsHealthBatch } from '../api/api';
 import DataTable from '../components/DataTable';
 import CalibrationWizard from '../components/CalibrationWizard';
 import InlineEdit from '../components/InlineEdit';
-import { Sensor, Device, Zone } from '../types';
+import { Sensor, Device, Zone, SensorHealthIndicator } from '../types';
 import { useSearchParams, Link } from 'react-router-dom';
 
 const Sensors: React.FC = () => {
@@ -11,6 +11,7 @@ const Sensors: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [moistureMap, setMoistureMap] = useState<Record<number, { moisture: number | null; status: string }>>({});
+  const [healthMap, setHealthMap] = useState<Record<number, SensorHealthIndicator>>({});
   const [calibratingSensor, setCalibratingSensor] = useState<Sensor | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -18,11 +19,12 @@ const Sensors: React.FC = () => {
   const activeZoneId = searchParams.get('zoneId') || '';
 
   const fetchData = useCallback(async () => {
-    const [sensorsData, devicesData, zonesData, summary] = await Promise.all([
+    const [sensorsData, devicesData, zonesData, summary, healthBatch] = await Promise.all([
       getSensors(activeDeviceId || undefined),
       getDevices(),
       getZones(),
       getDashboardSummary(),
+      getSensorsHealthBatch(),
     ]);
     setSensors(sensorsData);
     setDevices(devicesData);
@@ -32,6 +34,9 @@ const Sensors: React.FC = () => {
       map[s.id] = { moisture: s.current_moisture, status: s.status };
     }
     setMoistureMap(map);
+    const hm: Record<number, SensorHealthIndicator> = {};
+    for (const h of healthBatch) hm[h.sensor_db_id] = h;
+    setHealthMap(hm);
   }, [activeDeviceId]);
 
   useEffect(() => {
@@ -134,6 +139,29 @@ const Sensors: React.FC = () => {
         ) : (
           <span className="text-text-muted text-sm">Not set</span>
         ),
+    },
+    {
+      Header: 'Health',
+      accessor: 'health',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Cell: (_props: any, row: any) => {
+        const h = healthMap[row.id];
+        if (!h) return <span className="text-text-muted text-xs">--</span>;
+        if (h.total_readings_checked === 0) return <span className="text-text-muted text-xs">No data</span>;
+        const issues: { label: string; color: string }[] = [];
+        if (!h.reading_frequency_ok) issues.push({ label: 'Stale', color: 'bg-soil-glow text-soil border-soil/15' });
+        if (h.stuck_at_zero) issues.push({ label: 'ADC=0', color: 'bg-danger/10 text-danger border-danger/15' });
+        if (h.stuck_at_max) issues.push({ label: 'ADC=4095', color: 'bg-danger/10 text-danger border-danger/15' });
+        if (h.flatline) issues.push({ label: 'Flatline', color: 'bg-soil-glow text-soil border-soil/15' });
+        if (issues.length === 0) return <span className="badge bg-accent-glow text-accent border border-accent/15">OK</span>;
+        return (
+          <div className="flex gap-1 flex-wrap">
+            {issues.map((issue, i) => (
+              <span key={i} className={`badge border ${issue.color}`}>{issue.label}</span>
+            ))}
+          </div>
+        );
+      },
     },
     {
       Header: 'Calibration',

@@ -112,6 +112,12 @@ const Devices: React.FC = () => {
       Cell: (_: { value: unknown }, row: Device) => (
         <div className="flex gap-2 justify-end">
           <Link
+            to={`/devices/${encodeURIComponent(row.device_id)}`}
+            className="btn-secondary text-xs py-1.5 px-3"
+          >
+            Details
+          </Link>
+          <Link
             to={`/sensors?deviceId=${encodeURIComponent(row.device_id)}`}
             className="btn-secondary text-xs py-1.5 px-3"
           >

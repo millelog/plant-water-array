@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate, AggregatedReadingsResponse, DryingRateResponse, DatabaseStats } from '../types';
+import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate, AggregatedReadingsResponse, DryingRateResponse, DatabaseStats, HeartbeatLogEntry, SensorHealthIndicator } from '../types';
 
 const API_URL = 'http://localhost:8000';
 
@@ -202,6 +202,30 @@ export const exportReadingsCsv = async (sensorId: number, startTime?: string, en
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+};
+
+// Device detail & heartbeat history
+
+export const getDevice = async (deviceId: string): Promise<Device> => {
+  const response = await axios.get(`${API_URL}/devices/${deviceId}`);
+  return response.data;
+};
+
+export const getHeartbeatHistory = async (deviceId: string, limit: number = 50): Promise<HeartbeatLogEntry[]> => {
+  const response = await axios.get(`${API_URL}/devices/${deviceId}/heartbeats`, { params: { limit } });
+  return response.data;
+};
+
+// Sensor health
+
+export const getSensorHealth = async (sensorId: number): Promise<SensorHealthIndicator> => {
+  const response = await axios.get(`${API_URL}/sensors/${sensorId}/health`);
+  return response.data;
+};
+
+export const getSensorsHealthBatch = async (): Promise<SensorHealthIndicator[]> => {
+  const response = await axios.get(`${API_URL}/sensors/health/batch`);
+  return response.data;
 };
 
 // Readings cleanup

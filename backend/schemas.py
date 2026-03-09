@@ -312,6 +312,32 @@ class DatabaseStats(BaseModel):
     total_alerts: int
 
 
+# Heartbeat log entry schema
+
+class HeartbeatLogEntry(BaseModel):
+    id: int
+    device_id: str
+    timestamp: datetime
+    ip_address: Optional[str] = None
+    firmware_version: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Sensor health indicator schema
+
+class SensorHealthIndicator(BaseModel):
+    sensor_db_id: int
+    reading_frequency_ok: bool
+    last_reading_age_seconds: Optional[float] = None
+    expected_interval_seconds: int
+    stuck_at_zero: bool
+    stuck_at_max: bool
+    flatline: bool
+    variance: Optional[float] = None
+    total_readings_checked: int
+
+
 # Drying rate schema
 
 class DryingRateResponse(BaseModel):

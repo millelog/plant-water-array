@@ -248,25 +248,25 @@
           "id": "device-detail-page",
           "category": "frontend",
           "description": "Add a Device Detail page (route: /devices/:deviceId). Show: device info (IP, MAC, firmware, last seen), list of sensors on this device with current readings, uptime tracking, recent heartbeat history.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "heartbeat-history",
           "category": "backend",
           "description": "Add HeartbeatLog model (device_id, timestamp, ip_address, firmware_version). Log each heartbeat. New endpoint GET /devices/{device_id}/heartbeats (last 50). Helps diagnose connectivity issues.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "sensor-health-indicators",
           "category": "frontend",
           "description": "On Sensors page, show health indicators: reading frequency (is it reporting at expected interval?), ADC range check (stuck at 0 or 4095 = broken sensor), last N readings variance (flatline = suspicious).",
-          "passes": false
+          "passes": true
         },
         {
           "id": "raw-adc-debug-view",
           "category": "frontend",
           "description": "Add 'Debug' toggle on PlantDetail page that shows raw ADC values alongside moisture %, calibration bounds as reference lines on the graph, and a table of recent raw values. Helps with calibration.",
-          "passes": false
+          "passes": true
         }
       ]
     },

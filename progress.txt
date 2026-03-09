@@ -51,9 +51,22 @@ Completed Feature Groups
    - Auto-cleanup on server startup (deletes readings older than retention_days)
    - Manual cleanup button preserved for ad-hoc deletion
 
+7. Sensor & Device Diagnostics (priority 7) — DONE
+   - HeartbeatLog model (device_id, timestamp, ip_address, firmware_version)
+   - Heartbeat logging hooked into existing heartbeat endpoint
+   - GET /devices/{device_id} single device lookup
+   - GET /devices/{device_id}/heartbeats (last 50 entries)
+   - Sensor health computation (reading frequency, ADC stuck detection, flatline/variance)
+   - GET /sensors/health/batch and GET /sensors/{id}/health endpoints
+   - Device Detail page (/devices/:deviceId) with info card, sensors list, heartbeat history, uptime
+   - "Details" button on Devices page linking to device detail
+   - Health column on Sensors page (OK/Stale/ADC=0/ADC=4095/Flatline badges)
+   - Debug toggle on PlantDetail: dual Y-axis chart (moisture + raw ADC), calibration reference lines
+   - Raw ADC values table (last 20 readings) with calibration bounds display
+   - Cascade delete updated to clean up heartbeat logs
+
 Remaining Feature Groups
 ------------------------
-7. Sensor & Device Diagnostics (priority 7)
 8. Environment & Configuration Cleanup (priority 8)
 9. Multi-Plant Comparison & Visualization (priority 9)
 10. Light/Dark Mode Toggle (priority 10)

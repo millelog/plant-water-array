@@ -79,11 +79,28 @@ async def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(ge
     return devices
 
 
+@router.get("/{device_id}", response_model=schemas.Device)
+async def get_device(device_id: str, db: Session = Depends(get_db)):
+    device = crud.get_device_by_device_id(db, device_id)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    return device
+
+
+@router.get("/{device_id}/heartbeats", response_model=List[schemas.HeartbeatLogEntry])
+async def get_heartbeat_history(device_id: str, limit: int = 50, db: Session = Depends(get_db)):
+    device = crud.get_device_by_device_id(db, device_id)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    return crud.get_heartbeat_logs(db, device_id, limit=limit)
+
+
 @router.post("/{device_id}/heartbeat", response_model=schemas.HeartbeatResponse)
 async def device_heartbeat(device_id: str, heartbeat: schemas.DeviceHeartbeat, db: Session = Depends(get_db)):
     device = crud.update_device_heartbeat(db, device_id, heartbeat)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
+    crud.create_heartbeat_log(db, device_id, heartbeat)
     crud.check_and_notify_offline_devices(db)
     config = crud.build_heartbeat_config(db, device_id)
     return config

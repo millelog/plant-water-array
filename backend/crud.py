@@ -326,6 +326,8 @@ def delete_device(db: Session, device_id: str):
         # Delete thresholds for device's sensors
         db.query(models.Threshold).filter(models.Threshold.sensor_id.in_(sensor_ids)).delete(synchronize_session=False)
 
+    # Delete heartbeat logs for device
+    db.query(models.HeartbeatLog).filter(models.HeartbeatLog.device_id == device_id).delete(synchronize_session=False)
     # Delete readings by device_id
     db.query(models.Reading).filter(models.Reading.device_id == device_id).delete(synchronize_session=False)
     # Delete sensors
@@ -757,4 +759,85 @@ def get_drying_rate(db: Session, sensor_db_id: int, period_days: int = 7):
         "current_moisture": current_moisture,
         "data_points_used": n,
         "period_days": period_days,
+    }
+
+
+# Heartbeat log CRUD
+
+def create_heartbeat_log(db: Session, device_id: str, heartbeat: schemas.DeviceHeartbeat):
+    log = models.HeartbeatLog(
+        device_id=device_id,
+        ip_address=heartbeat.ip_address,
+        firmware_version=heartbeat.firmware_version,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+def get_heartbeat_logs(db: Session, device_id: str, limit: int = 50):
+    return (db.query(models.HeartbeatLog)
+            .filter(models.HeartbeatLog.device_id == device_id)
+            .order_by(models.HeartbeatLog.timestamp.desc())
+            .limit(limit)
+            .all())
+
+
+# Sensor health computation
+
+def compute_sensor_health(db: Session, sensor_db_id: int, expected_interval_seconds: int):
+    now = datetime.now(timezone.utc)
+
+    readings = (db.query(models.Reading)
+                .filter(models.Reading.sensor_id == sensor_db_id)
+                .order_by(models.Reading.timestamp.desc())
+                .limit(20)
+                .all())
+
+    total_checked = len(readings)
+
+    if total_checked == 0:
+        return {
+            "sensor_db_id": sensor_db_id,
+            "reading_frequency_ok": False,
+            "last_reading_age_seconds": None,
+            "expected_interval_seconds": expected_interval_seconds,
+            "stuck_at_zero": False,
+            "stuck_at_max": False,
+            "flatline": False,
+            "variance": None,
+            "total_readings_checked": 0,
+        }
+
+    latest = readings[0]
+    latest_ts = latest.timestamp.replace(tzinfo=timezone.utc) if latest.timestamp.tzinfo is None else latest.timestamp
+    age_seconds = (now - latest_ts).total_seconds()
+    reading_frequency_ok = age_seconds <= (expected_interval_seconds * 3)
+
+    # Check last 5 raw_adc values for stuck sensor
+    recent_adc = [r.raw_adc for r in readings[:5] if r.raw_adc is not None]
+    stuck_at_zero = len(recent_adc) >= 5 and all(v == 0 for v in recent_adc)
+    stuck_at_max = len(recent_adc) >= 5 and all(v == 4095 for v in recent_adc)
+
+    # Compute variance of moisture values
+    moisture_vals = [r.moisture for r in readings if r.moisture is not None]
+    if len(moisture_vals) >= 2:
+        mean = sum(moisture_vals) / len(moisture_vals)
+        variance = sum((v - mean) ** 2 for v in moisture_vals) / len(moisture_vals)
+    else:
+        variance = None
+
+    flatline = variance is not None and variance < 0.01
+
+    return {
+        "sensor_db_id": sensor_db_id,
+        "reading_frequency_ok": reading_frequency_ok,
+        "last_reading_age_seconds": round(age_seconds, 1),
+        "expected_interval_seconds": expected_interval_seconds,
+        "stuck_at_zero": stuck_at_zero,
+        "stuck_at_max": stuck_at_max,
+        "flatline": flatline,
+        "variance": round(variance, 4) if variance is not None else None,
+        "total_readings_checked": total_checked,
     }
