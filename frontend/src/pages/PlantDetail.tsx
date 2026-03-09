@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Sensor, Reading, Alert, Zone, Threshold, WateringLog as WateringLogType, AggregatedReadingPoint } from '../types';
+import { Sensor, Reading, Alert, Zone, Device, Threshold, WateringLog as WateringLogType, AggregatedReadingPoint } from '../types';
 import {
   getSensorDetail,
   getReadings,
@@ -10,6 +10,7 @@ import {
   getThreshold,
   updateSensor,
   getZones,
+  getDevices,
   getWateringLogs,
   deleteWateringLog,
   getAggregatedReadings,
@@ -29,6 +30,7 @@ const PlantDetail: React.FC = () => {
   const [readings, setReadings] = useState<Reading[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [thresholdMin, setThresholdMin] = useState<string>('');
   const [thresholdMax, setThresholdMax] = useState<string>('');
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
@@ -105,8 +107,9 @@ const PlantDetail: React.FC = () => {
     const init = async () => {
       setLoading(true);
       await loadSensor();
-      const z = await getZones();
+      const [z, d] = await Promise.all([getZones(), getDevices()]);
       setZones(z);
+      setDevices(d);
       setLoading(false);
     };
     init();
@@ -192,11 +195,11 @@ const PlantDetail: React.FC = () => {
             />
           </h1>
           <div className="flex items-center gap-3 mt-2">
-            <span className="text-sm text-text-secondary">on {(sensor as any).device?.name || sensor.device_id}</span>
+            <span className="text-sm text-text-secondary">on {devices.find(d => d.device_id === sensor.device_id)?.name || sensor.device_id}</span>
             <select
               value={sensor.zone_id ?? ''}
               onChange={(e) => handleZoneChange(e.target.value ? Number(e.target.value) : null)}
-              className="input !w-auto !py-1 !px-2 text-xs"
+              className="input !w-auto !py-1 !pl-2 !pr-8 text-xs"
             >
               <option value="">No zone</option>
               {zones.map(z => (

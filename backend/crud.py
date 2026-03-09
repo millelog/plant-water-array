@@ -78,6 +78,17 @@ def create_device(db: Session, device: schemas.DeviceCreate):
     return db_device
 
 
+def update_device(db: Session, device_id: str, update: schemas.DeviceUpdate):
+    device = db.query(models.Device).filter(models.Device.device_id == device_id).first()
+    if not device:
+        return None
+    if update.name is not None:
+        device.name = update.name
+    db.commit()
+    db.refresh(device)
+    return device
+
+
 def get_sensors(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Sensor).options(joinedload(models.Sensor.device)).offset(skip).limit(limit).all()
 

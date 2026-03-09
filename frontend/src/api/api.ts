@@ -8,6 +8,11 @@ export const getDevices = async (): Promise<Device[]> => {
   return response.data;
 };
 
+export const updateDevice = async (deviceId: string, data: { name?: string }): Promise<Device> => {
+  const response = await axios.patch(`${API_URL}/devices/${deviceId}`, data);
+  return response.data;
+};
+
 export const deleteDevice = async (deviceId: string): Promise<void> => {
   await axios.delete(`${API_URL}/devices/${deviceId}`);
 };

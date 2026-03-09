@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { getSensors, getDevices, getZones, getDashboardSummary } from '../api/api';
+import { getSensors, getDevices, getZones, getDashboardSummary, updateSensor } from '../api/api';
 import DataTable from '../components/DataTable';
 import CalibrationWizard from '../components/CalibrationWizard';
+import InlineEdit from '../components/InlineEdit';
 import { Sensor, Device, Zone } from '../types';
 import { useSearchParams, Link } from 'react-router-dom';
 
@@ -68,7 +69,14 @@ const Sensors: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       Cell: ({ value }: { value: string | null }, row: any) => (
         <div>
-          <div className="text-text font-medium">{value || `Sensor ${row.sensor_id}`}</div>
+          <InlineEdit
+            value={value || `Sensor ${row.sensor_id}`}
+            onSave={async (newName) => {
+              await updateSensor(row.id, { name: newName });
+              fetchData();
+            }}
+            className="text-text font-medium"
+          />
           <div className="text-xs text-text-muted font-mono">ID: {row.sensor_id}</div>
         </div>
       ),

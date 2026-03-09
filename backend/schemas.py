@@ -86,6 +86,10 @@ class DeviceCreate(BaseModel):
     device_id: str
 
 
+class DeviceUpdate(BaseModel):
+    name: Optional[str] = None
+
+
 class DeviceRegister(BaseModel):
     name: str
     device_id: Optional[str] = None

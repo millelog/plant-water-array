@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { getDevices, deleteDevice } from '../api/api';
+import { getDevices, deleteDevice, updateDevice } from '../api/api';
 import DataTable from '../components/DataTable';
 import DeviceSetupInstructions from '../components/DeviceSetupInstructions';
+import InlineEdit from '../components/InlineEdit';
 import { Device } from '../types';
 
 function timeAgo(dateString: string): string {
@@ -60,7 +61,14 @@ const Devices: React.FC = () => {
       accessor: 'name',
       Cell: ({ value }: { value: string }, row: Device) => (
         <div>
-          <div className="text-text font-medium">{value}</div>
+          <InlineEdit
+            value={value}
+            onSave={async (newName) => {
+              await updateDevice(row.device_id, { name: newName });
+              fetchDevices();
+            }}
+            className="text-text font-medium"
+          />
           <div className="text-xs text-text-muted font-mono">{row.device_id}</div>
         </div>
       ),

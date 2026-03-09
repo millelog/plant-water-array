@@ -57,6 +57,14 @@ async def register_device(device: schemas.DeviceRegister, db: Session = Depends(
     return new_device
 
 
+@router.patch("/{device_id}", response_model=schemas.Device)
+async def update_device(device_id: str, update: schemas.DeviceUpdate, db: Session = Depends(get_db)):
+    device = crud.update_device(db, device_id, update)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    return device
+
+
 @router.delete("/{device_id}")
 async def delete_device(device_id: str, db: Session = Depends(get_db)):
     deleted = crud.delete_device(db, device_id)
