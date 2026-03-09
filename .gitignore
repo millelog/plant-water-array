@@ -126,3 +126,10 @@ embeded-src/config.py
 
 # Firmware storage
 backend/firmware_storage/
+
+# KiCad
+pcb/fp-info-cache
+pcb/*.lck
+pcb/~*
+pcb/*.kicad_prl
+pcb/gerber_out.zip
