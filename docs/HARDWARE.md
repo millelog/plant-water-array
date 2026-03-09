@@ -31,7 +31,7 @@ ADC is configured with 11dB attenuation for full 0-3.6V range. Readings are aver
 
 | Condition | Raw ADC Value |
 |-----------|---------------|
-| Dry (air) | 3500 |
+| Dry (air) | 0 |
 | Wet (water) | 1500 |
 
 Per-sensor calibration can be set from the frontend via the Calibration Wizard.
