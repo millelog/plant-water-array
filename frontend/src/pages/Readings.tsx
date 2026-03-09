@@ -139,8 +139,8 @@ const Readings: React.FC = () => {
         >
           <option value="">Select a sensor</option>
           {sensors.map((sensor) => (
-            <option key={sensor.id} value={sensor.id}>
-              Sensor {sensor.id}
+            <option key={sensor.id} value={sensor.sensor_id}>
+              {sensor.name || `Sensor ${sensor.sensor_id}`}
             </option>
           ))}
         </select>

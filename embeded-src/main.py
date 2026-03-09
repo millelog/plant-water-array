@@ -192,11 +192,12 @@ def read_moisture(adc, samples=10):
     return round(pct, 1), raw
 
 
-def register_sensor(device_id, sensor_name):
+def register_sensor(device_id, sensor_name, sensor_id):
     import config
     data = {
         "device_id": device_id,
-        "name": sensor_name
+        "name": sensor_name,
+        "sensor_id": sensor_id
     }
     try:
         response = http_request("POST", config.SERVER_URL + "/sensors/", json=data)
@@ -418,10 +419,10 @@ def main():
     # Register each sensor with the backend
     registered_sensors = []
     for s in sensors:
-        sensor_id = register_sensor(device_id, s["name"])
+        sensor_id = register_sensor(device_id, s["name"], s["pin"])
         if sensor_id:
             registered_sensors.append({
-                "sensor_id": sensor_id,
+                "sensor_id": s["pin"],
                 "adc": s["adc"],
                 "pin": s["pin"],
                 "name": s["name"]

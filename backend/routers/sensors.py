@@ -17,7 +17,7 @@ router = APIRouter(
 async def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db)):
     existing_sensor = crud.get_sensor_by_sensor_id(db, device_id=sensor.device_id, sensor_id=sensor.sensor_id)
     if existing_sensor:
-        raise HTTPException(status_code=400, detail="Sensor already exists for this device")
+        return existing_sensor
     return crud.create_sensor(db=db, sensor=sensor)
 
 
