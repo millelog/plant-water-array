@@ -145,13 +145,51 @@ def register_with_server():
         return None
 
 
-def recognize_sensors():
-    # Simulate sensor recognition
-    # In a real scenario, this would read from config.SENSOR_PINS using ADC
-    num_sensors = random.randint(1, 3)
-    sensors = [f"Sensor_{i+1}" for i in range(num_sensors)]
-    print(f"Recognized {num_sensors} sensors: {', '.join(sensors)}")
+def setup_sensors():
+    """Initialize ADC on each pin listed in config.SENSOR_PINS.
+
+    ESP32 ADC1 pins that work with WiFi active: 32, 33, 34, 35, 36, 39
+    Max 6 moisture sensors per ESP32.
+    """
+    import config
+    pins = getattr(config, 'SENSOR_PINS', [34])
+    sensors = []
+    for pin_num in pins:
+        try:
+            adc = machine.ADC(machine.Pin(pin_num))
+            adc.atten(machine.ADC.ATTN_11DB)  # Full 0-3.6V range
+            adc.read()  # Test read
+            name = f"Moisture_GPIO{pin_num}"
+            sensors.append({"name": name, "pin": pin_num, "adc": adc})
+            print(f"ADC initialized on GPIO {pin_num}")
+        except Exception as e:
+            print(f"Failed to init ADC on GPIO {pin_num}: {e}")
+    print(f"Initialized {len(sensors)} sensor(s)")
     return sensors
+
+
+def read_moisture(adc, samples=10):
+    """Read moisture % from ADC, averaged over multiple samples.
+
+    Returns (percentage, raw_average).
+    Calibration values ADC_DRY / ADC_WET come from config.
+    """
+    import config
+    total = 0
+    for _ in range(samples):
+        total += adc.read()
+        time.sleep_ms(10)
+    raw = total // samples
+
+    dry_val = getattr(config, 'ADC_DRY', 3500)
+    wet_val = getattr(config, 'ADC_WET', 1500)
+
+    if dry_val == wet_val:
+        return 0.0, raw
+
+    pct = ((dry_val - raw) / (dry_val - wet_val)) * 100.0
+    pct = max(0.0, min(100.0, pct))
+    return round(pct, 1), raw
 
 
 def register_sensor(device_id, sensor_name):
@@ -176,10 +214,8 @@ def register_sensor(device_id, sensor_name):
         return None
 
 
-def send_moisture_reading(device_id, sensor_id):
+def send_moisture_reading(device_id, sensor_id, moisture):
     import config
-    # Simulated reading - swap with real ADC reads when hardware is wired
-    moisture = random.uniform(0, 100)
     data = {
         "device_id": device_id,
         "sensor_id": sensor_id,
@@ -373,12 +409,40 @@ def main():
         print("Failed to register device. Exiting.")
         return
 
-    sensors = recognize_sensors()
+    # Initialize real ADC sensors from config.SENSOR_PINS
+    sensors = setup_sensors()
+    if not sensors:
+        print("No sensors initialized. Check SENSOR_PINS in config.")
+        return
+
+    # Register each sensor with the backend
     registered_sensors = []
-    for sensor in sensors:
-        sensor_id = register_sensor(device_id, sensor)
+    for s in sensors:
+        sensor_id = register_sensor(device_id, s["name"])
         if sensor_id:
-            registered_sensors.append(sensor_id)
+            registered_sensors.append({
+                "sensor_id": sensor_id,
+                "adc": s["adc"],
+                "pin": s["pin"],
+                "name": s["name"]
+            })
+
+    if not registered_sensors:
+        print("No sensors registered with server. Exiting.")
+        return
+
+    # Initialize OLED display (optional — won't fail if not wired)
+    display = None
+    try:
+        from display import Display
+        display = Display()
+        if display.available:
+            print("OLED display initialized")
+            display.show_status("Connected", f"{len(registered_sensors)} sensor(s)")
+        else:
+            display = None
+    except Exception as e:
+        print(f"Display not available: {e}")
 
     last_reading_time = 0
     last_ota_check_time = 0
@@ -392,8 +456,16 @@ def main():
 
         # Send readings at READING_INTERVAL
         if current_time - last_reading_time >= config.READING_INTERVAL:
-            for sensor_id in registered_sensors:
-                send_moisture_reading(device_id, sensor_id)
+            readings = []
+            for s in registered_sensors:
+                moisture, raw = read_moisture(s["adc"])
+                print(f"GPIO{s['pin']}: {moisture}% (raw ADC: {raw})")
+                send_moisture_reading(device_id, s["sensor_id"], moisture)
+                readings.append((s["name"], moisture))
+
+            if display:
+                display.show_readings(readings)
+
             last_reading_time = current_time
 
         # Heartbeat + OTA check at OTA_CHECK_INTERVAL

@@ -9,4 +9,45 @@ DEVICE_NAME = "YourDeviceName"
 READING_INTERVAL = 10
 FIRMWARE_VERSION = "1.0.0"
 OTA_CHECK_INTERVAL = 300  # seconds
-SENSOR_PINS = [34, 35, 32]  # ADC GPIO pins (for real hardware)
+
+# ------------------------------------------------------------------
+# Hardware Pinout — ESP-WROOM-32 DevKit
+# ------------------------------------------------------------------
+#
+# MOISTURE SENSORS (Elecbee / icomcu 3-pin analog, or compatible)
+#   Sensor lead    ESP32 pin
+#   -----------    ---------
+#   S (signal)  →  Any ADC1 GPIO (see list below)
+#   + (VCC)     →  3V3
+#   - (GND)     →  GND
+#
+# ADC1 GPIOs (work while WiFi is active):
+#   GPIO 32, 33, 34, 35, 36, 39
+#   ** Max 6 moisture sensors per ESP32 **
+#
+# ADC2 GPIOs (0, 2, 4, 12-15, 25-27) DO NOT work when WiFi is on.
+# Do not use ADC2 pins for sensors.
+#
+# OLED DISPLAY (GME12864 / SSD1306 128x64, I2C)
+#   Display lead   ESP32 pin
+#   ------------   ---------
+#   GND         →  GND
+#   VCC         →  3V3
+#   SCL         →  GPIO 22
+#   SDA         →  GPIO 21
+#
+# Requires ssd1306 MicroPython module:
+#   import mip; mip.install("ssd1306")
+# ------------------------------------------------------------------
+
+# List the ADC1 GPIO pin(s) that have moisture sensors wired.
+# Start with one, add more as you connect them.
+SENSOR_PINS = [34]
+# All 6 ADC1 pins: [32, 33, 34, 35, 36, 39]
+
+# ADC calibration — tune these for your specific sensor:
+#   ADC_DRY: raw ADC reading when sensor is in air (dry)
+#   ADC_WET: raw ADC reading when sensor is submerged in water
+# Read raw values from the serial console output to calibrate.
+ADC_DRY = 3500
+ADC_WET = 1500
