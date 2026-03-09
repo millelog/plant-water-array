@@ -84,6 +84,15 @@ class Alert(Base):
     sensor = relationship("Sensor")
 
 
+class SystemConfig(Base):
+    __tablename__ = "system_config"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reading_interval = Column(Integer, default=10)       # seconds
+    device_timeout = Column(Integer, default=5)           # minutes
+    ota_check_interval = Column(Integer, default=300)     # seconds
+
+
 class Firmware(Base):
     __tablename__ = "firmware"
 

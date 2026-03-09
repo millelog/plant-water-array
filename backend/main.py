@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import devices, sensors, readings, alerts, firmware, zones, dashboard
+from routers import devices, sensors, readings, alerts, firmware, zones, dashboard, config
 from database import init_db, upgrade_db
 
 app = FastAPI()
@@ -25,6 +25,7 @@ app.include_router(alerts.router)
 app.include_router(firmware.router)
 app.include_router(zones.router)
 app.include_router(dashboard.router)
+app.include_router(config.router)
 
 
 @app.get("/ping")

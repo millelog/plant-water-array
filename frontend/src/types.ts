@@ -122,3 +122,16 @@ export interface DashboardSummary {
   stats: DashboardStats;
   sensors: SensorSummary[];
 }
+
+export interface SystemConfig {
+  id: number;
+  reading_interval: number;
+  device_timeout: number;
+  ota_check_interval: number;
+}
+
+export interface SystemConfigUpdate {
+  reading_interval?: number;
+  device_timeout?: number;
+  ota_check_interval?: number;
+}

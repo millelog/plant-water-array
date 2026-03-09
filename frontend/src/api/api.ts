@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary } from '../types';
+import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate } from '../types';
 
 const API_URL = 'http://localhost:8000';
 
@@ -151,6 +151,18 @@ export const deleteZone = async (zoneId: number): Promise<void> => {
 
 export const getDashboardSummary = async (): Promise<DashboardSummary> => {
   const response = await axios.get(`${API_URL}/dashboard/summary`);
+  return response.data;
+};
+
+// System config
+
+export const getSystemConfig = async (): Promise<SystemConfig> => {
+  const response = await axios.get(`${API_URL}/config/`);
+  return response.data;
+};
+
+export const updateSystemConfig = async (data: SystemConfigUpdate): Promise<SystemConfig> => {
+  const response = await axios.put(`${API_URL}/config/`, data);
   return response.data;
 };
 

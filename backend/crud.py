@@ -8,6 +8,60 @@ import uuid
 import logging
 
 
+# System config
+
+def get_system_config(db: Session):
+    config = db.query(models.SystemConfig).first()
+    if not config:
+        config = models.SystemConfig(reading_interval=10, device_timeout=5, ota_check_interval=300)
+        db.add(config)
+        db.commit()
+        db.refresh(config)
+    return config
+
+
+def update_system_config(db: Session, config_update: schemas.SystemConfigUpdate):
+    config = get_system_config(db)
+    for key, value in config_update.dict(exclude_unset=True).items():
+        setattr(config, key, value)
+    db.commit()
+    db.refresh(config)
+    return config
+
+
+def build_heartbeat_config(db: Session, device_id: str):
+    device = get_device_by_device_id(db, device_id)
+    if not device:
+        return None
+    sys_config = get_system_config(db)
+    sensors = db.query(models.Sensor).options(
+        joinedload(models.Sensor.threshold)
+    ).filter(models.Sensor.device_id == device_id).all()
+
+    sensor_configs = []
+    for s in sensors:
+        sc = {
+            "sensor_id": s.sensor_id,
+            "name": s.name,
+            "calibration_dry": s.calibration_dry,
+            "calibration_wet": s.calibration_wet,
+        }
+        if s.threshold:
+            sc["threshold_min"] = s.threshold.min_moisture
+            sc["threshold_max"] = s.threshold.max_moisture
+        sensor_configs.append(sc)
+
+    return {
+        "id": device.id,
+        "device_id": device.device_id,
+        "name": device.name,
+        "firmware_version": device.firmware_version,
+        "reading_interval": sys_config.reading_interval,
+        "ota_check_interval": sys_config.ota_check_interval,
+        "sensors": sensor_configs,
+    }
+
+
 def get_device_by_device_id(db: Session, device_id: str):
     return db.query(models.Device).filter(models.Device.device_id == device_id).first()
 
@@ -36,7 +90,9 @@ def get_sensor_by_sensor_id(db: Session, device_id: str, sensor_id: int):
 
 
 def get_sensors_by_device_id(db: Session, device_id: str):
-    return db.query(models.Sensor).join(models.Device).filter(models.Device.device_id == device_id).all()
+    return db.query(models.Sensor).options(
+        joinedload(models.Sensor.threshold)
+    ).join(models.Device).filter(models.Device.device_id == device_id).all()
 
 
 def update_sensor(db: Session, sensor_id: int, sensor_update: schemas.SensorUpdate):
@@ -358,7 +414,8 @@ def get_sensor_by_db_id(db: Session, sensor_db_id: int):
 
 def get_dashboard_summary(db: Session) -> schemas.DashboardSummary:
     now = datetime.now(timezone.utc)
-    online_cutoff = now - timedelta(minutes=5)
+    sys_config = get_system_config(db)
+    online_cutoff = now - timedelta(minutes=sys_config.device_timeout)
     hour_24_ago = now - timedelta(hours=24)
 
     # Stats

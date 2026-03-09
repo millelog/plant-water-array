@@ -71,12 +71,13 @@ async def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(ge
     return devices
 
 
-@router.post("/{device_id}/heartbeat", response_model=schemas.Device)
+@router.post("/{device_id}/heartbeat", response_model=schemas.HeartbeatResponse)
 async def device_heartbeat(device_id: str, heartbeat: schemas.DeviceHeartbeat, db: Session = Depends(get_db)):
     device = crud.update_device_heartbeat(db, device_id, heartbeat)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    return device
+    config = crud.build_heartbeat_config(db, device_id)
+    return config
 
 
 @router.get("/{device_id}/firmware/check", response_model=schemas.FirmwareCheckResponse)

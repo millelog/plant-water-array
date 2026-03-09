@@ -208,3 +208,45 @@ class DashboardStats(BaseModel):
 class DashboardSummary(BaseModel):
     stats: DashboardStats
     sensors: List[SensorSummary]
+
+
+# System config schemas
+
+class SystemConfigBase(BaseModel):
+    reading_interval: int = 10
+    device_timeout: int = 5
+    ota_check_interval: int = 300
+
+
+class SystemConfigUpdate(BaseModel):
+    reading_interval: Optional[int] = None
+    device_timeout: Optional[int] = None
+    ota_check_interval: Optional[int] = None
+
+
+class SystemConfig(SystemConfigBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+# Heartbeat response schemas
+
+class HeartbeatSensorConfig(BaseModel):
+    sensor_id: int
+    name: Optional[str] = None
+    calibration_dry: Optional[float] = None
+    calibration_wet: Optional[float] = None
+    threshold_min: Optional[float] = None
+    threshold_max: Optional[float] = None
+
+
+class HeartbeatResponse(BaseModel):
+    id: int
+    device_id: str
+    name: str
+    firmware_version: Optional[str] = None
+    reading_interval: int
+    ota_check_interval: int
+    sensors: List[HeartbeatSensorConfig] = []

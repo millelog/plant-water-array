@@ -10,6 +10,13 @@ import os
 
 sta_if = network.WLAN(network.STA_IF)
 
+# Server-synced config cache (updated via heartbeat responses)
+server_config = {
+    "reading_interval": None,
+    "ota_check_interval": None,
+    "sensors": {},  # sensor_id -> {name, calibration_dry, calibration_wet, threshold_min, threshold_max}
+}
+
 
 def get_mac():
     return ubinascii.hexlify(sta_if.config('mac'), ':').decode()
@@ -243,9 +250,57 @@ def send_heartbeat(device_id):
         response = http_request("POST", config.SERVER_URL + f"/devices/{device_id}/heartbeat", json=data)
         if response.status_code == 200:
             print("Heartbeat sent successfully")
+            try:
+                heartbeat_data = response.json()
+                response.close()
+                return heartbeat_data
+            except Exception:
+                response.close()
+                return None
         response.close()
     except Exception as e:
         print(f"Error sending heartbeat: {e}")
+    return None
+
+
+def apply_server_config(heartbeat_data, registered_sensors):
+    global server_config
+    if not heartbeat_data:
+        return
+    if "reading_interval" in heartbeat_data:
+        server_config["reading_interval"] = heartbeat_data["reading_interval"]
+        print(f"Config sync: reading_interval={heartbeat_data['reading_interval']}s")
+    if "ota_check_interval" in heartbeat_data:
+        server_config["ota_check_interval"] = heartbeat_data["ota_check_interval"]
+        print(f"Config sync: ota_check_interval={heartbeat_data['ota_check_interval']}s")
+    for sc in heartbeat_data.get("sensors", []):
+        sid = sc.get("sensor_id")
+        if sid is not None:
+            server_config["sensors"][sid] = {
+                "name": sc.get("name"),
+                "calibration_dry": sc.get("calibration_dry"),
+                "calibration_wet": sc.get("calibration_wet"),
+                "threshold_min": sc.get("threshold_min"),
+                "threshold_max": sc.get("threshold_max"),
+            }
+            # Update sensor name in registered_sensors list
+            for s in registered_sensors:
+                if s["sensor_id"] == sid and sc.get("name"):
+                    s["server_name"] = sc["name"]
+
+
+def get_reading_interval():
+    import config
+    if server_config["reading_interval"] is not None:
+        return server_config["reading_interval"]
+    return getattr(config, 'READING_INTERVAL', 10)
+
+
+def get_ota_check_interval():
+    import config
+    if server_config["ota_check_interval"] is not None:
+        return server_config["ota_check_interval"]
+    return getattr(config, 'OTA_CHECK_INTERVAL', 300)
 
 
 def sha256_file(filepath):
@@ -447,8 +502,12 @@ def main():
     except Exception as e:
         print(f"Display not available: {e}")
 
+    # Initial config sync via heartbeat before main loop
+    heartbeat_data = send_heartbeat(device_id)
+    apply_server_config(heartbeat_data, registered_sensors)
+
     last_reading_time = 0
-    last_ota_check_time = 0
+    last_ota_check_time = time.time()  # just did heartbeat
 
     while True:
         if not ensure_wifi():
@@ -457,23 +516,48 @@ def main():
 
         current_time = time.time()
 
-        # Send readings at READING_INTERVAL
-        if current_time - last_reading_time >= config.READING_INTERVAL:
-            readings = []
+        # Send readings at dynamic interval
+        if current_time - last_reading_time >= get_reading_interval():
+            readings_data = []
             for s in registered_sensors:
                 moisture, raw = read_moisture(s["adc"])
                 print(f"GPIO{s['pin']}: {moisture}% (raw ADC: {raw})")
                 send_moisture_reading(device_id, s["sensor_id"], moisture, raw_adc=raw)
-                readings.append((s["name"], moisture))
+
+                # Compute display moisture using server calibration if available
+                sc = server_config["sensors"].get(s["sensor_id"])
+                display_moisture = moisture
+                if sc and raw is not None and sc.get("calibration_dry") is not None and sc.get("calibration_wet") is not None:
+                    dry = sc["calibration_dry"]
+                    wet = sc["calibration_wet"]
+                    if dry != wet:
+                        display_moisture = max(0.0, min(100.0, round(((dry - raw) / (dry - wet)) * 100.0, 1)))
+
+                # Determine alert state using synced thresholds
+                alert = False
+                if sc:
+                    if sc.get("threshold_min") is not None and display_moisture < sc["threshold_min"]:
+                        alert = True
+                    if sc.get("threshold_max") is not None and display_moisture > sc["threshold_max"]:
+                        alert = True
+
+                display_name = s.get("server_name") or s["name"]
+                readings_data.append({
+                    "name": display_name,
+                    "moisture": display_moisture,
+                    "alert": alert,
+                    "pin": s["pin"],
+                })
 
             if display:
-                display.show_readings(readings)
+                display.show_readings_enhanced(readings_data, config.DEVICE_NAME)
 
             last_reading_time = current_time
 
-        # Heartbeat + OTA check at OTA_CHECK_INTERVAL
-        if current_time - last_ota_check_time >= config.OTA_CHECK_INTERVAL:
-            send_heartbeat(device_id)
+        # Heartbeat + OTA check at dynamic interval
+        if current_time - last_ota_check_time >= get_ota_check_interval():
+            hb_data = send_heartbeat(device_id)
+            apply_server_config(hb_data, registered_sensors)
             check_and_apply_ota(device_id)
             last_ota_check_time = current_time
 

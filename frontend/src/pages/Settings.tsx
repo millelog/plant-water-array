@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Zone } from '../types';
-import { getZones, createZone, updateZone, deleteZone, cleanupOldReadings } from '../api/api';
+import { Zone, SystemConfig } from '../types';
+import { getZones, createZone, updateZone, deleteZone, cleanupOldReadings, getSystemConfig, updateSystemConfig } from '../api/api';
 
 const Settings: React.FC = () => {
   const [zones, setZones] = useState<Zone[]>([]);
@@ -10,9 +10,63 @@ const Settings: React.FC = () => {
   const [cleanupDays, setCleanupDays] = useState('90');
   const [cleanupResult, setCleanupResult] = useState<string | null>(null);
 
+  // System config state
+  const [config, setConfig] = useState<SystemConfig | null>(null);
+  const [configDraft, setConfigDraft] = useState<{ reading_interval: string; device_timeout: string; ota_check_interval: string }>({
+    reading_interval: '', device_timeout: '', ota_check_interval: ''
+  });
+  const [configSaving, setConfigSaving] = useState(false);
+  const [configMsg, setConfigMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   useEffect(() => {
     loadZones();
+    loadConfig();
   }, []);
+
+  const loadConfig = async () => {
+    try {
+      const c = await getSystemConfig();
+      setConfig(c);
+      setConfigDraft({
+        reading_interval: String(c.reading_interval),
+        device_timeout: String(c.device_timeout),
+        ota_check_interval: String(c.ota_check_interval),
+      });
+    } catch {
+      setConfigMsg({ type: 'error', text: 'Failed to load system config' });
+    }
+  };
+
+  const configDirty = config !== null && (
+    String(config.reading_interval) !== configDraft.reading_interval ||
+    String(config.device_timeout) !== configDraft.device_timeout ||
+    String(config.ota_check_interval) !== configDraft.ota_check_interval
+  );
+
+  const handleSaveConfig = async () => {
+    const ri = parseInt(configDraft.reading_interval);
+    const dt = parseInt(configDraft.device_timeout);
+    const oci = parseInt(configDraft.ota_check_interval);
+    if (isNaN(ri) || ri < 5 || ri > 3600) { setConfigMsg({ type: 'error', text: 'Reading interval must be 5-3600 seconds' }); return; }
+    if (isNaN(dt) || dt < 1 || dt > 60) { setConfigMsg({ type: 'error', text: 'Device timeout must be 1-60 minutes' }); return; }
+    if (isNaN(oci) || oci < 60 || oci > 86400) { setConfigMsg({ type: 'error', text: 'OTA check interval must be 60-86400 seconds' }); return; }
+    setConfigSaving(true);
+    setConfigMsg(null);
+    try {
+      const updated = await updateSystemConfig({ reading_interval: ri, device_timeout: dt, ota_check_interval: oci });
+      setConfig(updated);
+      setConfigDraft({
+        reading_interval: String(updated.reading_interval),
+        device_timeout: String(updated.device_timeout),
+        ota_check_interval: String(updated.ota_check_interval),
+      });
+      setConfigMsg({ type: 'success', text: 'Configuration saved' });
+    } catch {
+      setConfigMsg({ type: 'error', text: 'Failed to save configuration' });
+    } finally {
+      setConfigSaving(false);
+    }
+  };
 
   const loadZones = async () => {
     const z = await getZones();
@@ -107,29 +161,66 @@ const Settings: React.FC = () => {
       {/* System Configuration */}
       <div className="card p-5">
         <div className="section-title mb-4">System Configuration</div>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-surface-border">
-            <div>
-              <div className="text-sm text-text font-medium">API Endpoint</div>
-              <div className="text-xs text-text-muted mt-0.5">Backend server address</div>
+        {config === null ? (
+          <div className="text-sm text-text-muted py-3 text-center">Loading...</div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between py-3 border-b border-surface-border">
+              <div>
+                <div className="text-sm text-text font-medium">Reading Interval</div>
+                <div className="text-xs text-text-muted mt-0.5">How often devices send readings (seconds)</div>
+              </div>
+              <input
+                type="number"
+                value={configDraft.reading_interval}
+                onChange={(e) => { setConfigDraft({ ...configDraft, reading_interval: e.target.value }); setConfigMsg(null); }}
+                className="input !w-24 text-right"
+                min="5" max="3600"
+              />
             </div>
-            <span className="data-value text-sm">localhost:8000</span>
-          </div>
-          <div className="flex items-center justify-between py-3 border-b border-surface-border">
-            <div>
-              <div className="text-sm text-text font-medium">Polling Interval</div>
-              <div className="text-xs text-text-muted mt-0.5">How often devices send readings</div>
+            <div className="flex items-center justify-between py-3 border-b border-surface-border">
+              <div>
+                <div className="text-sm text-text font-medium">Device Timeout</div>
+                <div className="text-xs text-text-muted mt-0.5">Time before marking device offline (minutes)</div>
+              </div>
+              <input
+                type="number"
+                value={configDraft.device_timeout}
+                onChange={(e) => { setConfigDraft({ ...configDraft, device_timeout: e.target.value }); setConfigMsg(null); }}
+                className="input !w-24 text-right"
+                min="1" max="60"
+              />
             </div>
-            <span className="data-value text-sm">30s</span>
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <div className="text-sm text-text font-medium">Device Timeout</div>
-              <div className="text-xs text-text-muted mt-0.5">Time before marking device offline</div>
+            <div className="flex items-center justify-between py-3">
+              <div>
+                <div className="text-sm text-text font-medium">OTA Check Interval</div>
+                <div className="text-xs text-text-muted mt-0.5">How often devices check for firmware updates (seconds)</div>
+              </div>
+              <input
+                type="number"
+                value={configDraft.ota_check_interval}
+                onChange={(e) => { setConfigDraft({ ...configDraft, ota_check_interval: e.target.value }); setConfigMsg(null); }}
+                className="input !w-24 text-right"
+                min="60" max="86400"
+              />
             </div>
-            <span className="data-value text-sm">5m</span>
+            <div className="flex items-center justify-between pt-2">
+              <div className="text-xs text-text-muted">Changes apply to devices on their next heartbeat</div>
+              <div className="flex items-center gap-3">
+                {configMsg && (
+                  <span className={`text-xs font-mono ${configMsg.type === 'success' ? 'text-accent' : 'text-danger'}`}>{configMsg.text}</span>
+                )}
+                <button
+                  onClick={handleSaveConfig}
+                  disabled={!configDirty || configSaving}
+                  className="btn-primary text-sm disabled:opacity-40"
+                >
+                  {configSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Data Maintenance */}
