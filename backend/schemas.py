@@ -214,6 +214,9 @@ class SystemConfigBase(BaseModel):
     device_timeout: int = 5
     ota_check_interval: int = 300
     moisture_jump_threshold: float = 15.0
+    ntfy_enabled: bool = False
+    ntfy_server_url: str = "https://ntfy.sh"
+    ntfy_topic: Optional[str] = None
 
 
 class SystemConfigUpdate(BaseModel):
@@ -221,6 +224,9 @@ class SystemConfigUpdate(BaseModel):
     device_timeout: Optional[int] = None
     ota_check_interval: Optional[int] = None
     moisture_jump_threshold: Optional[float] = None
+    ntfy_enabled: Optional[bool] = None
+    ntfy_server_url: Optional[str] = None
+    ntfy_topic: Optional[str] = None
 
 
 class SystemConfig(SystemConfigBase):

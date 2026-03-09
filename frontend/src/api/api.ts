@@ -163,6 +163,13 @@ export const deleteWateringLog = async (logId: number): Promise<void> => {
   await axios.delete(`${API_URL}/watering-logs/${logId}`);
 };
 
+// Notifications
+
+export const testNotification = async (): Promise<{ detail: string }> => {
+  const response = await axios.post(`${API_URL}/config/test-notification`);
+  return response.data;
+};
+
 // Readings cleanup
 
 export const cleanupOldReadings = async (olderThanDays: number = 90): Promise<{ deleted: number }> => {

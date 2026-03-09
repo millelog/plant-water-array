@@ -23,6 +23,7 @@ class Device(Base):
     ip_address = Column(String, nullable=True)
     mac_address = Column(String, nullable=True)
     last_seen = Column(DateTime, nullable=True)
+    offline_notified = Column(Boolean, default=False)
 
     sensors = relationship("Sensor", back_populates="device")
 
@@ -103,6 +104,9 @@ class SystemConfig(Base):
     device_timeout = Column(Integer, default=5)           # minutes
     ota_check_interval = Column(Integer, default=300)     # seconds
     moisture_jump_threshold = Column(Float, default=15.0)
+    ntfy_enabled = Column(Boolean, default=False)
+    ntfy_server_url = Column(String, default="https://ntfy.sh")
+    ntfy_topic = Column(String, nullable=True)
 
 
 class WateringLog(Base):

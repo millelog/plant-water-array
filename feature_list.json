@@ -65,31 +65,31 @@
           "id": "ntfy-config-model",
           "category": "backend",
           "description": "Add notification fields to SystemConfig model: ntfy_enabled (bool, default False), ntfy_server_url (str, default 'https://ntfy.sh'), ntfy_topic (str). Update schemas and config router.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "ntfy-send-service",
           "category": "backend",
           "description": "Create services/notifications.py with send_ntfy_notification(title, message, priority, tags). Use httpx or requests to POST to ntfy server. Priority mapping: dry=urgent, wet=default.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "ntfy-alert-integration",
           "category": "backend",
           "description": "Hook into alert creation in crud.py — when a new alert is created AND ntfy is enabled, fire notification with plant name, moisture %, and threshold info. Include link to dashboard.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "ntfy-settings-ui",
           "category": "frontend",
           "description": "Add Notifications section to Settings page. Fields: enable/disable toggle, server URL input, topic input. 'Send Test' button that triggers a test notification via new API endpoint POST /config/test-notification.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "ntfy-device-offline",
           "category": "backend",
           "description": "Add a periodic check (or on heartbeat miss) that sends notification when a device goes offline (last_seen exceeds device_timeout). Avoid spamming — only notify once per offline event.",
-          "passes": false
+          "passes": true
         }
       ]
     },

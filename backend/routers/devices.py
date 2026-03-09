@@ -76,6 +76,7 @@ async def device_heartbeat(device_id: str, heartbeat: schemas.DeviceHeartbeat, d
     device = crud.update_device_heartbeat(db, device_id, heartbeat)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
+    crud.check_and_notify_offline_devices(db)
     config = crud.build_heartbeat_config(db, device_id)
     return config
 

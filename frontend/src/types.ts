@@ -123,6 +123,9 @@ export interface SystemConfig {
   device_timeout: number;
   ota_check_interval: number;
   moisture_jump_threshold: number;
+  ntfy_enabled: boolean;
+  ntfy_server_url: string;
+  ntfy_topic: string | null;
 }
 
 export interface SystemConfigUpdate {
@@ -130,6 +133,9 @@ export interface SystemConfigUpdate {
   device_timeout?: number;
   ota_check_interval?: number;
   moisture_jump_threshold?: number;
+  ntfy_enabled?: boolean;
+  ntfy_server_url?: string;
+  ntfy_topic?: string | null;
 }
 
 export interface WateringLog {

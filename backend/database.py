@@ -29,6 +29,10 @@ def upgrade_db():
             "ALTER TABLE sensors ADD COLUMN notes TEXT",
             "ALTER TABLE sensors ADD COLUMN auto_log_watering BOOLEAN DEFAULT 0",
             "ALTER TABLE system_config ADD COLUMN moisture_jump_threshold FLOAT DEFAULT 15.0",
+            "ALTER TABLE system_config ADD COLUMN ntfy_enabled BOOLEAN DEFAULT 0",
+            "ALTER TABLE system_config ADD COLUMN ntfy_server_url TEXT DEFAULT 'https://ntfy.sh'",
+            "ALTER TABLE system_config ADD COLUMN ntfy_topic TEXT",
+            "ALTER TABLE devices ADD COLUMN offline_notified BOOLEAN DEFAULT 0",
         ]
         for sql in migrations:
             try:

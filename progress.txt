@@ -1,0 +1,32 @@
+Plant Water Array — Feature Progress
+=====================================
+
+Completed Feature Groups
+------------------------
+
+1. Watering Log & Plant Notes (priority 1) — DONE
+   - WateringLog model, CRUD, API routes
+   - Log watering UI on PlantDetail page
+   - Dashboard "last watered X days ago"
+   - Auto-watering detection from moisture jumps
+   - Per-sensor notes field
+
+2. Push Notifications via ntfy (priority 2) — DONE
+   - ntfy config fields on SystemConfig (enabled, server URL, topic)
+   - Notification service (backend/services/notifications.py) using httpx
+   - Alert creation triggers push notification with plant/device names
+   - Device offline detection (notifies once per offline event, resets on heartbeat)
+   - Test notification endpoint (POST /config/test-notification)
+   - Settings page Notifications card (toggle, server URL, topic, Send Test button)
+
+Remaining Feature Groups
+------------------------
+
+3. Historical Data & Insights (priority 3)
+4. Dashboard Quality-of-Life (priority 4)
+5. Mobile Experience (priority 5)
+6. Database Backup & Maintenance (priority 6)
+7. Sensor & Device Diagnostics (priority 7)
+8. Environment & Configuration Cleanup (priority 8)
+9. Multi-Plant Comparison & Visualization (priority 9)
+10. Light/Dark Mode Toggle (priority 10)

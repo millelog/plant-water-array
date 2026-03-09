@@ -13,7 +13,7 @@ import logging
 def get_system_config(db: Session):
     config = db.query(models.SystemConfig).first()
     if not config:
-        config = models.SystemConfig(reading_interval=10, device_timeout=5, ota_check_interval=300)
+        config = models.SystemConfig(reading_interval=10, device_timeout=5, ota_check_interval=300, ntfy_enabled=False, ntfy_server_url="https://ntfy.sh")
         db.add(config)
         db.commit()
         db.refresh(config)
@@ -247,6 +247,21 @@ def create_alert(db: Session, alert: schemas.AlertCreate):
     db.add(db_alert)
     db.commit()
     db.refresh(db_alert)
+
+    # Send push notification if ntfy is enabled
+    try:
+        config = get_system_config(db)
+        if config.ntfy_enabled and config.ntfy_topic:
+            from services.notifications import send_alert_notification
+            sensor = db.query(models.Sensor).options(
+                joinedload(models.Sensor.device)
+            ).filter(models.Sensor.id == alert.sensor_id).first()
+            sensor_name = sensor.name if sensor else None
+            device_name = sensor.device.name if sensor and sensor.device else None
+            send_alert_notification(config.ntfy_server_url, config.ntfy_topic, alert.message, sensor_name, device_name)
+    except Exception as e:
+        logging.error(f"Failed to send alert notification: {e}")
+
     return db_alert
 
 
@@ -317,6 +332,7 @@ def update_device_heartbeat(db: Session, device_id: str, heartbeat: schemas.Devi
     if not db_device:
         return None
     db_device.last_seen = datetime.now(timezone.utc)
+    db_device.offline_notified = False
     if heartbeat.firmware_version is not None:
         db_device.firmware_version = heartbeat.firmware_version
     if heartbeat.ip_address is not None:
@@ -326,6 +342,26 @@ def update_device_heartbeat(db: Session, device_id: str, heartbeat: schemas.Devi
     db.commit()
     db.refresh(db_device)
     return db_device
+
+
+def check_and_notify_offline_devices(db: Session):
+    try:
+        config = get_system_config(db)
+        if not config.ntfy_enabled or not config.ntfy_topic:
+            return
+        from services.notifications import send_device_offline_notification
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=config.device_timeout)
+        offline_devices = db.query(models.Device).filter(
+            models.Device.last_seen < cutoff,
+            models.Device.offline_notified == False
+        ).all()
+        for device in offline_devices:
+            send_device_offline_notification(config.ntfy_server_url, config.ntfy_topic, device.name, device.device_id)
+            device.offline_notified = True
+        if offline_devices:
+            db.commit()
+    except Exception as e:
+        logging.error(f"Failed to check/notify offline devices: {e}")
 
 
 def get_latest_firmware(db: Session):

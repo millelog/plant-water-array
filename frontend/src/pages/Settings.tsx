@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Zone, SystemConfig } from '../types';
-import { getZones, createZone, updateZone, deleteZone, cleanupOldReadings, getSystemConfig, updateSystemConfig } from '../api/api';
+import { getZones, createZone, updateZone, deleteZone, cleanupOldReadings, getSystemConfig, updateSystemConfig, testNotification } from '../api/api';
 
 const Settings: React.FC = () => {
   const [zones, setZones] = useState<Zone[]>([]);
@@ -18,6 +18,15 @@ const Settings: React.FC = () => {
   const [configSaving, setConfigSaving] = useState(false);
   const [configMsg, setConfigMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Notification config state
+  const [ntfyDraft, setNtfyDraft] = useState<{ ntfy_enabled: boolean; ntfy_server_url: string; ntfy_topic: string }>({
+    ntfy_enabled: false, ntfy_server_url: 'https://ntfy.sh', ntfy_topic: ''
+  });
+  const [ntfySaving, setNtfySaving] = useState(false);
+  const [ntfyMsg, setNtfyMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [testingNotification, setTestingNotification] = useState(false);
+  const [testResult, setTestResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   useEffect(() => {
     loadZones();
     loadConfig();
@@ -32,6 +41,11 @@ const Settings: React.FC = () => {
         device_timeout: String(c.device_timeout),
         ota_check_interval: String(c.ota_check_interval),
         moisture_jump_threshold: String(c.moisture_jump_threshold),
+      });
+      setNtfyDraft({
+        ntfy_enabled: c.ntfy_enabled,
+        ntfy_server_url: c.ntfy_server_url,
+        ntfy_topic: c.ntfy_topic || '',
       });
     } catch {
       setConfigMsg({ type: 'error', text: 'Failed to load system config' });
@@ -70,6 +84,49 @@ const Settings: React.FC = () => {
       setConfigMsg({ type: 'error', text: 'Failed to save configuration' });
     } finally {
       setConfigSaving(false);
+    }
+  };
+
+  const ntfyDirty = config !== null && (
+    config.ntfy_enabled !== ntfyDraft.ntfy_enabled ||
+    config.ntfy_server_url !== ntfyDraft.ntfy_server_url ||
+    (config.ntfy_topic || '') !== ntfyDraft.ntfy_topic
+  );
+
+  const handleSaveNtfy = async () => {
+    setNtfySaving(true);
+    setNtfyMsg(null);
+    try {
+      const updated = await updateSystemConfig({
+        ntfy_enabled: ntfyDraft.ntfy_enabled,
+        ntfy_server_url: ntfyDraft.ntfy_server_url,
+        ntfy_topic: ntfyDraft.ntfy_topic || null,
+      });
+      setConfig(updated);
+      setNtfyDraft({
+        ntfy_enabled: updated.ntfy_enabled,
+        ntfy_server_url: updated.ntfy_server_url,
+        ntfy_topic: updated.ntfy_topic || '',
+      });
+      setNtfyMsg({ type: 'success', text: 'Notification settings saved' });
+    } catch {
+      setNtfyMsg({ type: 'error', text: 'Failed to save notification settings' });
+    } finally {
+      setNtfySaving(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    setTestingNotification(true);
+    setTestResult(null);
+    try {
+      const result = await testNotification();
+      setTestResult({ type: 'success', text: result.detail });
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to send test notification';
+      setTestResult({ type: 'error', text: message });
+    } finally {
+      setTestingNotification(false);
     }
   };
 
@@ -240,6 +297,86 @@ const Settings: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Notifications */}
+      <div className="card p-5">
+        <div className="section-title mb-4">Notifications</div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-surface-border">
+            <div>
+              <div className="text-sm text-text font-medium">Enable Push Notifications</div>
+              <div className="text-xs text-text-muted mt-0.5">Send alerts to your phone via ntfy</div>
+            </div>
+            <button
+              onClick={() => { setNtfyDraft({ ...ntfyDraft, ntfy_enabled: !ntfyDraft.ntfy_enabled }); setNtfyMsg(null); }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${ntfyDraft.ntfy_enabled ? 'bg-accent' : 'bg-surface-border'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${ntfyDraft.ntfy_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-surface-border">
+            <div>
+              <div className="text-sm text-text font-medium">Server URL</div>
+              <div className="text-xs text-text-muted mt-0.5">Leave default for free public server</div>
+            </div>
+            <input
+              type="text"
+              value={ntfyDraft.ntfy_server_url}
+              onChange={(e) => { setNtfyDraft({ ...ntfyDraft, ntfy_server_url: e.target.value }); setNtfyMsg(null); }}
+              disabled={!ntfyDraft.ntfy_enabled}
+              className="input !w-56 text-right disabled:opacity-40"
+              placeholder="https://ntfy.sh"
+            />
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-surface-border">
+            <div>
+              <div className="text-sm text-text font-medium">Topic</div>
+              <div className="text-xs text-text-muted mt-0.5">Choose a unique topic name</div>
+            </div>
+            <input
+              type="text"
+              value={ntfyDraft.ntfy_topic}
+              onChange={(e) => { setNtfyDraft({ ...ntfyDraft, ntfy_topic: e.target.value }); setNtfyMsg(null); }}
+              disabled={!ntfyDraft.ntfy_enabled}
+              className="input !w-56 text-right disabled:opacity-40"
+              placeholder="my-plants"
+            />
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-surface-border">
+            <div>
+              <div className="text-sm text-text font-medium">Send Test</div>
+              <div className="text-xs text-text-muted mt-0.5">Verify notifications are working</div>
+            </div>
+            <div className="flex items-center gap-3">
+              {testResult && (
+                <span className={`text-xs font-mono ${testResult.type === 'success' ? 'text-accent' : 'text-danger'}`}>{testResult.text}</span>
+              )}
+              <button
+                onClick={handleTestNotification}
+                disabled={!ntfyDraft.ntfy_enabled || !ntfyDraft.ntfy_topic || testingNotification || ntfyDirty}
+                className="btn-secondary text-sm disabled:opacity-40"
+              >
+                {testingNotification ? 'Sending...' : 'Send Test'}
+              </button>
+            </div>
+          </div>
+          <div className="text-xs text-text-muted">Install the ntfy app on your phone and subscribe to your topic to receive notifications.</div>
+          <div className="flex items-center justify-end pt-2">
+            <div className="flex items-center gap-3">
+              {ntfyMsg && (
+                <span className={`text-xs font-mono ${ntfyMsg.type === 'success' ? 'text-accent' : 'text-danger'}`}>{ntfyMsg.text}</span>
+              )}
+              <button
+                onClick={handleSaveNtfy}
+                disabled={!ntfyDirty || ntfySaving}
+                className="btn-primary text-sm disabled:opacity-40"
+              >
+                {ntfySaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Data Maintenance */}
