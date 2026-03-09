@@ -9,11 +9,13 @@ import Settings from './pages/Settings';
 import Firmware from './pages/Firmware';
 import PlantDetail from './pages/PlantDetail';
 import DeviceDetail from './pages/DeviceDetail';
+import Compare from './pages/Compare';
 
 const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
+      <Route path="/compare" element={<Compare />} />
       <Route path="/devices" element={<Devices />} />
       <Route path="/devices/:deviceId" element={<DeviceDetail />} />
       <Route path="/sensors" element={<Sensors />} />

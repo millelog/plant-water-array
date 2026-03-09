@@ -212,3 +212,23 @@ export interface DryingRateResponse {
   data_points_used: number;
   period_days: number;
 }
+
+export interface CompareReadingPoint {
+  timestamp: string;
+  moisture: number;
+}
+
+export interface SensorCompareData {
+  sensor_id: number;
+  sensor_name: string | null;
+  device_name: string | null;
+  zone_name: string | null;
+  readings: CompareReadingPoint[];
+}
+
+export interface CompareReadingsResponse {
+  sensor_count: number;
+  hours: number;
+  aggregated: boolean;
+  sensors: SensorCompareData[];
+}

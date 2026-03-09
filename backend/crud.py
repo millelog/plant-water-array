@@ -841,3 +841,61 @@ def compute_sensor_health(db: Session, sensor_db_id: int, expected_interval_seco
         "variance": round(variance, 4) if variance is not None else None,
         "total_readings_checked": total_checked,
     }
+
+
+# Compare readings (multi-sensor)
+
+def get_compare_readings(db: Session, sensor_db_ids: list, hours: int):
+    now = datetime.now(timezone.utc)
+    start_time = now - timedelta(hours=hours)
+    aggregated = hours > 24
+
+    sensors_data = []
+    for sid in sensor_db_ids:
+        sensor = db.query(models.Sensor).options(
+            joinedload(models.Sensor.device),
+            joinedload(models.Sensor.zone),
+        ).filter(models.Sensor.id == sid).first()
+        if not sensor:
+            continue
+
+        if aggregated:
+            rows = db.query(
+                func.strftime('%Y-%m-%d %H:00', models.Reading.timestamp).label('hour'),
+                func.avg(models.Reading.moisture).label('avg_moisture'),
+            ).filter(
+                models.Reading.sensor_id == sid,
+                models.Reading.timestamp >= start_time,
+            ).group_by(
+                func.strftime('%Y-%m-%d %H:00', models.Reading.timestamp)
+            ).order_by('hour').all()
+
+            readings = [
+                {"timestamp": row.hour, "moisture": round(row.avg_moisture, 1)}
+                for row in rows
+            ]
+        else:
+            raw = db.query(models.Reading).filter(
+                models.Reading.sensor_id == sid,
+                models.Reading.timestamp >= start_time,
+            ).order_by(models.Reading.timestamp.asc()).all()
+
+            readings = [
+                {"timestamp": r.timestamp.isoformat(), "moisture": r.moisture}
+                for r in raw
+            ]
+
+        sensors_data.append({
+            "sensor_id": sid,
+            "sensor_name": sensor.name,
+            "device_name": sensor.device.name if sensor.device else None,
+            "zone_name": sensor.zone.name if sensor.zone else None,
+            "readings": readings,
+        })
+
+    return {
+        "sensor_count": len(sensors_data),
+        "hours": hours,
+        "aggregated": aggregated,
+        "sensors": sensors_data,
+    }

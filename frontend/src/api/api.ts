@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate, AggregatedReadingsResponse, DryingRateResponse, DatabaseStats, HeartbeatLogEntry, SensorHealthIndicator } from '../types';
+import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate, AggregatedReadingsResponse, DryingRateResponse, DatabaseStats, HeartbeatLogEntry, SensorHealthIndicator, CompareReadingsResponse } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -239,6 +239,13 @@ export const cleanupOldReadings = async (olderThanDays: number = 90): Promise<{ 
 
 export const getDatabaseStats = async (): Promise<DatabaseStats> => {
   const response = await axios.get(`${API_URL}/admin/stats`);
+  return response.data;
+};
+
+export const getCompareReadings = async (sensorIds: number[], hours: number): Promise<CompareReadingsResponse> => {
+  const response = await axios.get(`${API_URL}/readings/compare`, {
+    params: { sensor_ids: sensorIds.join(','), hours },
+  });
   return response.data;
 };
 

@@ -66,6 +66,23 @@ async def export_readings_csv(
     )
 
 
+@router.get("/readings/compare", response_model=schemas.CompareReadingsResponse)
+async def compare_readings(
+    sensor_ids: str = Query(..., description="Comma-separated sensor DB IDs"),
+    hours: int = Query(168, ge=1, le=8760, description="Time range in hours (default 7d, max 1yr)"),
+    db: Session = Depends(get_db),
+):
+    try:
+        ids = [int(x.strip()) for x in sensor_ids.split(",") if x.strip()]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="sensor_ids must be comma-separated integers")
+    if len(ids) < 1:
+        raise HTTPException(status_code=400, detail="At least 1 sensor_id required")
+    if len(ids) > 10:
+        raise HTTPException(status_code=400, detail="Maximum 10 sensors allowed")
+    return crud.get_compare_readings(db, sensor_db_ids=ids, hours=hours)
+
+
 @router.get("/readings/sensor/{sensor_id}/aggregated", response_model=schemas.AggregatedReadingsResponse)
 async def get_aggregated_readings(
     sensor_id: int,

@@ -7,6 +7,7 @@ import {
   BellIcon,
   CogIcon,
   ArrowUpTrayIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { useAlerts } from '../context/AlertContext';
 import { useMobileNav } from '../context/MobileNavContext';
@@ -25,6 +26,7 @@ const Sidebar: React.FC = () => {
 
   const primaryItems: MenuItem[] = [
     { name: 'Dashboard', icon: HomeIcon, path: '/' },
+    { name: 'Compare', icon: ChartBarIcon, path: '/compare' },
     { name: 'Alerts', icon: BellIcon, path: '/alerts', badge: unreadCount },
   ];
 

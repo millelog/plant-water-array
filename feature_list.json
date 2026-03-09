@@ -314,19 +314,19 @@
           "id": "multi-sensor-readings-api",
           "category": "backend",
           "description": "New endpoint GET /readings/compare?sensor_ids=1,2,3&hours=168 returns time-aligned readings for multiple sensors. Aggregate to hourly if >24h range to keep response size reasonable.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "comparison-chart-page",
           "category": "frontend",
           "description": "New 'Compare' page (add to sidebar under Dashboard). Multi-select sensors (checkboxes), time range picker, overlaid Recharts LineChart with color-coded lines per sensor. Legend with sensor names.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "zone-aggregate-chart",
           "category": "frontend",
           "description": "On dashboard, add expandable zone-level chart showing average moisture across all sensors in that zone over time. Quick visual for 'is this room getting enough water overall?'",
-          "passes": false
+          "passes": true
         }
       ]
     },

@@ -349,3 +349,25 @@ class DryingRateResponse(BaseModel):
     current_moisture: Optional[float] = None
     data_points_used: int
     period_days: int
+
+
+# Compare readings schemas
+
+class CompareReadingPoint(BaseModel):
+    timestamp: str
+    moisture: float
+
+
+class SensorCompareData(BaseModel):
+    sensor_id: int
+    sensor_name: Optional[str] = None
+    device_name: Optional[str] = None
+    zone_name: Optional[str] = None
+    readings: list[CompareReadingPoint]
+
+
+class CompareReadingsResponse(BaseModel):
+    sensor_count: int
+    hours: int
+    aggregated: bool
+    sensors: list[SensorCompareData]

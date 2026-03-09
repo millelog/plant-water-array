@@ -215,6 +215,7 @@ const Dashboard: React.FC = () => {
                 key={zoneId}
                 title={zone.name}
                 sensors={zoneSensors}
+                sensorDbIds={zoneSensors.map(s => s.id)}
                 onRefresh={loadData}
               />
             );
@@ -224,6 +225,7 @@ const Dashboard: React.FC = () => {
             <ZoneSection
               title={zones.length > 0 ? 'Ungrouped' : 'All Plants'}
               sensors={ungrouped}
+              sensorDbIds={ungrouped.map(s => s.id)}
               onRefresh={loadData}
             />
           )}

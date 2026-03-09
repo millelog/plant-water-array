@@ -77,7 +77,12 @@ Completed Feature Groups
    - docker-compose.yml (backend + frontend, named volume, configurable ports)
    - __main__ block in main.py for direct `python main.py` execution
 
+9. Multi-Plant Comparison & Visualization (priority 9) — DONE
+   - GET /readings/compare endpoint (multi-sensor, hourly aggregation for >24h)
+   - Compare page with sensor multi-select, time range picker, overlaid LineChart
+   - Compare added to sidebar navigation
+   - Zone aggregate chart on dashboard (expandable average moisture per zone)
+
 Remaining Feature Groups
 ------------------------
-9. Multi-Plant Comparison & Visualization (priority 9)
 10. Light/Dark Mode Toggle (priority 10)
