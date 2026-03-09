@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate, AggregatedReadingsResponse, DryingRateResponse } from '../types';
+import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate, AggregatedReadingsResponse, DryingRateResponse, DatabaseStats } from '../types';
 
 const API_URL = 'http://localhost:8000';
 
@@ -209,4 +209,28 @@ export const exportReadingsCsv = async (sensorId: number, startTime?: string, en
 export const cleanupOldReadings = async (olderThanDays: number = 90): Promise<{ deleted: number }> => {
   const response = await axios.delete(`${API_URL}/readings/cleanup`, { params: { older_than_days: olderThanDays } });
   return response.data;
+};
+
+// Database admin
+
+export const getDatabaseStats = async (): Promise<DatabaseStats> => {
+  const response = await axios.get(`${API_URL}/admin/stats`);
+  return response.data;
+};
+
+export const downloadBackup = async (): Promise<void> => {
+  const response = await axios.get(`${API_URL}/admin/backup`, {
+    responseType: 'blob',
+  });
+  const disposition = response.headers['content-disposition'];
+  const filenameMatch = disposition?.match(/filename="?(.+?)"?$/);
+  const filename = filenameMatch?.[1] || 'plant_water_array_backup.db';
+  const url = URL.createObjectURL(response.data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };

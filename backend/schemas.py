@@ -223,6 +223,7 @@ class SystemConfigBase(BaseModel):
     ntfy_topic: Optional[str] = None
     weather_latitude: Optional[float] = None
     weather_longitude: Optional[float] = None
+    retention_days: int = 90
 
 
 class SystemConfigUpdate(BaseModel):
@@ -235,6 +236,7 @@ class SystemConfigUpdate(BaseModel):
     ntfy_topic: Optional[str] = None
     weather_latitude: Optional[float] = None
     weather_longitude: Optional[float] = None
+    retention_days: Optional[int] = None
 
 
 class SystemConfig(SystemConfigBase):
@@ -296,6 +298,18 @@ class AggregatedReadingsResponse(BaseModel):
     sensor_id: int
     period: str
     data: list[AggregatedReadingPoint]
+
+
+# Database stats schema
+
+class DatabaseStats(BaseModel):
+    total_readings: int
+    database_size_bytes: int
+    database_size_human: str
+    oldest_reading: Optional[datetime] = None
+    readings_per_day_avg: float
+    total_watering_logs: int
+    total_alerts: int
 
 
 # Drying rate schema

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Zone, SystemConfig } from '../types';
-import { getZones, createZone, updateZone, deleteZone, cleanupOldReadings, getSystemConfig, updateSystemConfig, testNotification } from '../api/api';
+import { Zone, SystemConfig, DatabaseStats } from '../types';
+import { getZones, createZone, updateZone, deleteZone, cleanupOldReadings, getSystemConfig, updateSystemConfig, testNotification, getDatabaseStats, downloadBackup } from '../api/api';
 
 const Settings: React.FC = () => {
   const [zones, setZones] = useState<Zone[]>([]);
@@ -9,6 +9,17 @@ const Settings: React.FC = () => {
   const [editingName, setEditingName] = useState('');
   const [cleanupDays, setCleanupDays] = useState('90');
   const [cleanupResult, setCleanupResult] = useState<string | null>(null);
+
+  // Database stats state
+  const [dbStats, setDbStats] = useState<DatabaseStats | null>(null);
+  const [dbStatsLoading, setDbStatsLoading] = useState(false);
+  const [backupDownloading, setBackupDownloading] = useState(false);
+  const [backupMsg, setBackupMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Retention config state
+  const [retentionDraft, setRetentionDraft] = useState('90');
+  const [retentionSaving, setRetentionSaving] = useState(false);
+  const [retentionMsg, setRetentionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // System config state
   const [config, setConfig] = useState<SystemConfig | null>(null);
@@ -37,6 +48,7 @@ const Settings: React.FC = () => {
   useEffect(() => {
     loadZones();
     loadConfig();
+    loadDbStats();
   }, []);
 
   const loadConfig = async () => {
@@ -58,6 +70,7 @@ const Settings: React.FC = () => {
         weather_latitude: c.weather_latitude != null ? String(c.weather_latitude) : '',
         weather_longitude: c.weather_longitude != null ? String(c.weather_longitude) : '',
       });
+      setRetentionDraft(String(c.retention_days));
     } catch {
       setConfigMsg({ type: 'error', text: 'Failed to load system config' });
     }
@@ -165,6 +178,53 @@ const Settings: React.FC = () => {
       setTestResult({ type: 'error', text: message });
     } finally {
       setTestingNotification(false);
+    }
+  };
+
+  const loadDbStats = async () => {
+    setDbStatsLoading(true);
+    try {
+      const stats = await getDatabaseStats();
+      setDbStats(stats);
+    } catch {
+      // silently fail - stats are non-critical
+    } finally {
+      setDbStatsLoading(false);
+    }
+  };
+
+  const handleDownloadBackup = async () => {
+    setBackupDownloading(true);
+    setBackupMsg(null);
+    try {
+      await downloadBackup();
+      setBackupMsg({ type: 'success', text: 'Backup downloaded' });
+    } catch {
+      setBackupMsg({ type: 'error', text: 'Failed to download backup' });
+    } finally {
+      setBackupDownloading(false);
+    }
+  };
+
+  const retentionDirty = config !== null && String(config.retention_days) !== retentionDraft;
+
+  const handleSaveRetention = async () => {
+    const days = parseInt(retentionDraft);
+    if (isNaN(days) || days < 7 || days > 365) {
+      setRetentionMsg({ type: 'error', text: 'Retention must be 7-365 days' });
+      return;
+    }
+    setRetentionSaving(true);
+    setRetentionMsg(null);
+    try {
+      const updated = await updateSystemConfig({ retention_days: days });
+      setConfig(updated);
+      setRetentionDraft(String(updated.retention_days));
+      setRetentionMsg({ type: 'success', text: 'Retention setting saved' });
+    } catch {
+      setRetentionMsg({ type: 'error', text: 'Failed to save retention setting' });
+    } finally {
+      setRetentionSaving(false);
     }
   };
 
@@ -465,25 +525,119 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      {/* Data Maintenance */}
+      {/* Database Health */}
       <div className="card p-5">
-        <div className="section-title mb-4">Data Maintenance</div>
-        <div className="flex items-end gap-3">
-          <div>
-            <label className="text-xs text-text-muted font-mono block mb-1">Delete readings older than (days)</label>
+        <div className="section-title mb-4">Database Health</div>
+        {dbStatsLoading ? (
+          <div className="text-sm text-text-muted py-3 text-center">Loading...</div>
+        ) : dbStats ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-canvas-100 rounded-xl p-3 border border-surface-border">
+                <div className="text-xs text-text-muted font-mono">Total Readings</div>
+                <div className="text-lg text-text font-semibold font-mono">{dbStats.total_readings.toLocaleString()}</div>
+              </div>
+              <div className="bg-canvas-100 rounded-xl p-3 border border-surface-border">
+                <div className="text-xs text-text-muted font-mono">Database Size</div>
+                <div className="text-lg text-text font-semibold font-mono">{dbStats.database_size_human}</div>
+              </div>
+              <div className="bg-canvas-100 rounded-xl p-3 border border-surface-border">
+                <div className="text-xs text-text-muted font-mono">Readings / Day</div>
+                <div className="text-lg text-text font-semibold font-mono">{dbStats.readings_per_day_avg}</div>
+              </div>
+              <div className="bg-canvas-100 rounded-xl p-3 border border-surface-border">
+                <div className="text-xs text-text-muted font-mono">Oldest Reading</div>
+                <div className="text-sm text-text font-semibold font-mono">
+                  {dbStats.oldest_reading ? new Date(dbStats.oldest_reading).toLocaleDateString() : 'None'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between py-3 border-t border-surface-border">
+              <div className="text-xs text-text-muted">
+                {dbStats.total_watering_logs} watering logs &middot; {dbStats.total_alerts} alerts
+              </div>
+              <button onClick={loadDbStats} className="btn-ghost text-xs !py-1 !px-3">Refresh</button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-text-muted py-3 text-center">Could not load database stats</div>
+        )}
+      </div>
+
+      {/* Backup & Data Maintenance */}
+      <div className="card p-5">
+        <div className="section-title mb-4">Backup & Data Maintenance</div>
+        <div className="space-y-4">
+          {/* Download Backup */}
+          <div className="flex items-center justify-between py-3 border-b border-surface-border">
+            <div>
+              <div className="text-sm text-text font-medium">Download Backup</div>
+              <div className="text-xs text-text-muted mt-0.5">Safe copy of the database while the system is running</div>
+            </div>
+            <div className="flex items-center gap-3">
+              {backupMsg && (
+                <span className={`text-xs font-mono ${backupMsg.type === 'success' ? 'text-accent' : 'text-danger'}`}>{backupMsg.text}</span>
+              )}
+              <button
+                onClick={handleDownloadBackup}
+                disabled={backupDownloading}
+                className="btn-primary text-sm disabled:opacity-40"
+              >
+                {backupDownloading ? 'Downloading...' : 'Download .db'}
+              </button>
+            </div>
+          </div>
+
+          {/* Auto-Cleanup Retention */}
+          <div className="flex items-center justify-between py-3 border-b border-surface-border">
+            <div>
+              <div className="text-sm text-text font-medium">Auto-Cleanup Retention</div>
+              <div className="text-xs text-text-muted mt-0.5">Readings older than this are deleted on server startup (7-365 days)</div>
+            </div>
             <input
               type="number"
-              value={cleanupDays}
-              onChange={(e) => setCleanupDays(e.target.value)}
-              className="input !w-28"
-              min="1"
+              value={retentionDraft}
+              onChange={(e) => { setRetentionDraft(e.target.value); setRetentionMsg(null); }}
+              className="input !w-24 text-right"
+              min="7" max="365"
             />
           </div>
-          <button onClick={handleCleanup} className="btn-danger text-sm">Clean Up</button>
+          <div className="flex items-center justify-end">
+            <div className="flex items-center gap-3">
+              {retentionMsg && (
+                <span className={`text-xs font-mono ${retentionMsg.type === 'success' ? 'text-accent' : 'text-danger'}`}>{retentionMsg.text}</span>
+              )}
+              <button
+                onClick={handleSaveRetention}
+                disabled={!retentionDirty || retentionSaving}
+                className="btn-primary text-sm disabled:opacity-40"
+              >
+                {retentionSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+
+          {/* Manual Cleanup */}
+          <div className="border-t border-surface-border pt-4">
+            <div className="text-sm text-text font-medium mb-2">Manual Cleanup</div>
+            <div className="flex items-end gap-3">
+              <div>
+                <label className="text-xs text-text-muted font-mono block mb-1">Delete readings older than (days)</label>
+                <input
+                  type="number"
+                  value={cleanupDays}
+                  onChange={(e) => setCleanupDays(e.target.value)}
+                  className="input !w-28"
+                  min="1"
+                />
+              </div>
+              <button onClick={handleCleanup} className="btn-danger text-sm">Clean Up</button>
+            </div>
+            {cleanupResult && (
+              <div className="mt-3 text-sm text-accent font-mono">{cleanupResult}</div>
+            )}
+          </div>
         </div>
-        {cleanupResult && (
-          <div className="mt-3 text-sm text-accent font-mono">{cleanupResult}</div>
-        )}
       </div>
 
       {/* About */}

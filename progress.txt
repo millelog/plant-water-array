@@ -42,9 +42,17 @@ Completed Feature Groups
    - PWA manifest + service worker via vite-plugin-pwa (installable, offline API caching)
    - SVG app icons (192px, 512px), Apple mobile web app meta tags, viewport-fit=cover
 
+6. Database Backup & Maintenance (priority 6) — DONE
+   - GET /admin/backup endpoint using SQLite online backup API (safe copy while DB is in use)
+   - Download Backup button on Settings page
+   - Database Health section on Settings (total readings, DB size, readings/day, oldest reading)
+   - GET /admin/stats endpoint with reading counts, DB file size, per-day averages
+   - retention_days field on SystemConfig (default 90, configurable 7-365 days)
+   - Auto-cleanup on server startup (deletes readings older than retention_days)
+   - Manual cleanup button preserved for ad-hoc deletion
+
 Remaining Feature Groups
 ------------------------
-6. Database Backup & Maintenance (priority 6)
 7. Sensor & Device Diagnostics (priority 7)
 8. Environment & Configuration Cleanup (priority 8)
 9. Multi-Plant Comparison & Visualization (priority 9)

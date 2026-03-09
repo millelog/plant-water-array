@@ -109,6 +109,7 @@ class SystemConfig(Base):
     ntfy_topic = Column(String, nullable=True)
     weather_latitude = Column(Float, nullable=True)
     weather_longitude = Column(Float, nullable=True)
+    retention_days = Column(Integer, default=90)
 
 
 class WateringLog(Base):

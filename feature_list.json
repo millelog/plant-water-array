@@ -215,25 +215,25 @@
           "id": "db-backup-endpoint",
           "category": "backend",
           "description": "Add GET /admin/backup endpoint that returns the SQLite database file as a download. Use SQLite online backup API (connection.backup()) for a safe copy while DB is in use.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "db-backup-ui",
           "category": "frontend",
           "description": "Add 'Download Backup' button to Settings page under Data Maintenance section. Shows database size and last backup time.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "auto-cleanup-config",
           "category": "full-stack",
           "description": "Add retention_days field to SystemConfig (default 90). Show in Settings with explanation. Backend: add startup task or periodic check that calls delete_old_readings automatically.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "db-stats-endpoint",
           "category": "full-stack",
           "description": "Add GET /admin/stats endpoint: total readings count, database file size, oldest reading date, readings per day average. Show on Settings page as 'Database Health' section.",
-          "passes": false
+          "passes": true
         }
       ]
     },

@@ -35,6 +35,7 @@ def upgrade_db():
             "ALTER TABLE devices ADD COLUMN offline_notified BOOLEAN DEFAULT 0",
             "ALTER TABLE system_config ADD COLUMN weather_latitude FLOAT",
             "ALTER TABLE system_config ADD COLUMN weather_longitude FLOAT",
+            "ALTER TABLE system_config ADD COLUMN retention_days INTEGER DEFAULT 90",
         ]
         for sql in migrations:
             try:

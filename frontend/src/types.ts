@@ -128,6 +128,7 @@ export interface SystemConfig {
   ntfy_topic: string | null;
   weather_latitude: number | null;
   weather_longitude: number | null;
+  retention_days: number;
 }
 
 export interface SystemConfigUpdate {
@@ -140,6 +141,17 @@ export interface SystemConfigUpdate {
   ntfy_topic?: string | null;
   weather_latitude?: number | null;
   weather_longitude?: number | null;
+  retention_days?: number;
+}
+
+export interface DatabaseStats {
+  total_readings: number;
+  database_size_bytes: number;
+  database_size_human: string;
+  oldest_reading: string | null;
+  readings_per_day_avg: number;
+  total_watering_logs: number;
+  total_alerts: number;
 }
 
 export interface WateringLog {
