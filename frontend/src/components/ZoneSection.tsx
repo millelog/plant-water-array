@@ -39,7 +39,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = ({ title, sensors, defaultOpen =
           ) : (
             sensors.map((sensor, i) => (
               <div key={sensor.id} style={{ animationDelay: `${i * 60}ms` }} className="animate-slide-up">
-                <PlantCard sensor={sensor} onNameChange={onRefresh} />
+                <PlantCard sensor={sensor} onNameChange={onRefresh} onRefresh={onRefresh} />
               </div>
             ))
           )}

@@ -19,11 +19,24 @@ Completed Feature Groups
    - Test notification endpoint (POST /config/test-notification)
    - Settings page Notifications card (toggle, server URL, topic, Send Test button)
 
+3. Historical Data & Insights (priority 3) — DONE
+   - Aggregated readings API (daily/weekly grouping with avg/min/max)
+   - Drying rate API (linear regression, excludes post-watering readings)
+   - CSV export (backend endpoint + frontend download)
+   - Time range controls on Readings page (24h/7d/30d/all, 30d+ uses aggregation)
+   - PlantInsights card on PlantDetail (avg moisture, drying rate, days until dry, waterings)
+   - SensorReadingsGraph dual-mode: raw readings or aggregated with min/max band
+
+4. Dashboard Quality-of-Life (priority 4) — DONE
+   - Sort & filter toolbar (zone/driest first/name + all/needs water/healthy, persisted in localStorage)
+   - Plant card "last watered" display (already implemented)
+   - Weather widget (Open-Meteo API, lat/lon from Settings, temp + humidity)
+   - Kiosk mode (fullscreen overlay, auto-cycles zones, navbar toggle, Escape to exit)
+   - Quick actions on PlantCard hover/tap (Log Watering, Threshold, History)
+
 Remaining Feature Groups
 ------------------------
 
-3. Historical Data & Insights (priority 3)
-4. Dashboard Quality-of-Life (priority 4)
 5. Mobile Experience (priority 5)
 6. Database Backup & Maintenance (priority 6)
 7. Sensor & Device Diagnostics (priority 7)

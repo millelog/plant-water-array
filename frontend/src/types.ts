@@ -126,6 +126,8 @@ export interface SystemConfig {
   ntfy_enabled: boolean;
   ntfy_server_url: string;
   ntfy_topic: string | null;
+  weather_latitude: number | null;
+  weather_longitude: number | null;
 }
 
 export interface SystemConfigUpdate {
@@ -136,6 +138,8 @@ export interface SystemConfigUpdate {
   ntfy_enabled?: boolean;
   ntfy_server_url?: string;
   ntfy_topic?: string | null;
+  weather_latitude?: number | null;
+  weather_longitude?: number | null;
 }
 
 export interface WateringLog {

@@ -27,6 +27,13 @@ const Settings: React.FC = () => {
   const [testingNotification, setTestingNotification] = useState(false);
   const [testResult, setTestResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Location config state
+  const [locationDraft, setLocationDraft] = useState<{ weather_latitude: string; weather_longitude: string }>({
+    weather_latitude: '', weather_longitude: ''
+  });
+  const [locationSaving, setLocationSaving] = useState(false);
+  const [locationMsg, setLocationMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   useEffect(() => {
     loadZones();
     loadConfig();
@@ -46,6 +53,10 @@ const Settings: React.FC = () => {
         ntfy_enabled: c.ntfy_enabled,
         ntfy_server_url: c.ntfy_server_url,
         ntfy_topic: c.ntfy_topic || '',
+      });
+      setLocationDraft({
+        weather_latitude: c.weather_latitude != null ? String(c.weather_latitude) : '',
+        weather_longitude: c.weather_longitude != null ? String(c.weather_longitude) : '',
       });
     } catch {
       setConfigMsg({ type: 'error', text: 'Failed to load system config' });
@@ -113,6 +124,33 @@ const Settings: React.FC = () => {
       setNtfyMsg({ type: 'error', text: 'Failed to save notification settings' });
     } finally {
       setNtfySaving(false);
+    }
+  };
+
+  const locationDirty = config !== null && (
+    (config.weather_latitude != null ? String(config.weather_latitude) : '') !== locationDraft.weather_latitude ||
+    (config.weather_longitude != null ? String(config.weather_longitude) : '') !== locationDraft.weather_longitude
+  );
+
+  const handleSaveLocation = async () => {
+    const lat = locationDraft.weather_latitude.trim() ? parseFloat(locationDraft.weather_latitude) : null;
+    const lon = locationDraft.weather_longitude.trim() ? parseFloat(locationDraft.weather_longitude) : null;
+    if (lat !== null && (isNaN(lat) || lat < -90 || lat > 90)) { setLocationMsg({ type: 'error', text: 'Latitude must be between -90 and 90' }); return; }
+    if (lon !== null && (isNaN(lon) || lon < -180 || lon > 180)) { setLocationMsg({ type: 'error', text: 'Longitude must be between -180 and 180' }); return; }
+    setLocationSaving(true);
+    setLocationMsg(null);
+    try {
+      const updated = await updateSystemConfig({ weather_latitude: lat, weather_longitude: lon });
+      setConfig(updated);
+      setLocationDraft({
+        weather_latitude: updated.weather_latitude != null ? String(updated.weather_latitude) : '',
+        weather_longitude: updated.weather_longitude != null ? String(updated.weather_longitude) : '',
+      });
+      setLocationMsg({ type: 'success', text: 'Location saved' });
+    } catch {
+      setLocationMsg({ type: 'error', text: 'Failed to save location' });
+    } finally {
+      setLocationSaving(false);
     }
   };
 
@@ -373,6 +411,54 @@ const Settings: React.FC = () => {
                 className="btn-primary text-sm disabled:opacity-40"
               >
                 {ntfySaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Location */}
+      <div className="card p-5">
+        <div className="section-title mb-4">Location</div>
+        <div className="text-xs text-text-muted mb-4">Set your coordinates to show weather data on the dashboard. Uses the free Open-Meteo API.</div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-surface-border">
+            <div>
+              <div className="text-sm text-text font-medium">Latitude</div>
+              <div className="text-xs text-text-muted mt-0.5">e.g. 40.7128</div>
+            </div>
+            <input
+              type="text"
+              value={locationDraft.weather_latitude}
+              onChange={(e) => { setLocationDraft({ ...locationDraft, weather_latitude: e.target.value }); setLocationMsg(null); }}
+              className="input !w-32 text-right"
+              placeholder="0.0"
+            />
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <div className="text-sm text-text font-medium">Longitude</div>
+              <div className="text-xs text-text-muted mt-0.5">e.g. -74.0060</div>
+            </div>
+            <input
+              type="text"
+              value={locationDraft.weather_longitude}
+              onChange={(e) => { setLocationDraft({ ...locationDraft, weather_longitude: e.target.value }); setLocationMsg(null); }}
+              className="input !w-32 text-right"
+              placeholder="0.0"
+            />
+          </div>
+          <div className="flex items-center justify-end pt-2">
+            <div className="flex items-center gap-3">
+              {locationMsg && (
+                <span className={`text-xs font-mono ${locationMsg.type === 'success' ? 'text-accent' : 'text-danger'}`}>{locationMsg.text}</span>
+              )}
+              <button
+                onClick={handleSaveLocation}
+                disabled={!locationDirty || locationSaving}
+                className="btn-primary text-sm disabled:opacity-40"
+              >
+                {locationSaving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>

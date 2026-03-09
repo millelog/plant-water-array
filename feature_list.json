@@ -104,31 +104,31 @@
           "id": "aggregated-readings-api",
           "category": "backend",
           "description": "New endpoint GET /readings/sensor/{sensor_id}/aggregated?period=daily|weekly (returns avg, min, max moisture per period). Use SQLite date functions for grouping.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "drying-rate-api",
           "category": "backend",
           "description": "New endpoint GET /readings/sensor/{sensor_id}/drying-rate. Calculate average moisture drop per hour over the last 7 days (excluding periods after watering events if watering log exists). Return rate + estimated days until dry threshold.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "readings-graph-timerange",
           "category": "frontend",
           "description": "Add time range selector to SensorReadingsGraph component: 24h, 7d, 30d, All. Currently shows all readings which gets dense. Use aggregated endpoint for 30d+ views.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "plant-detail-insights",
           "category": "frontend",
           "description": "Add insights card on PlantDetail page showing: average moisture (7d), drying rate (% per day), estimated days until needs water, total watering events this month.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "csv-export",
           "category": "full-stack",
           "description": "Add 'Export CSV' button on Readings page. Backend endpoint GET /readings/export?sensor_id=X&start=&end= returns CSV file download with timestamp, moisture, raw_adc columns.",
-          "passes": false
+          "passes": true
         }
       ]
     },
@@ -143,31 +143,31 @@
           "id": "dashboard-sort-filter",
           "category": "frontend",
           "description": "Add sort options to dashboard: by moisture level (driest first), by name, by zone. Add filter: show all / needs water only / healthy only. Persist selection in localStorage.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "plant-card-last-watered",
           "category": "frontend",
           "description": "If watering log feature exists, show 'Watered 3d ago' on PlantCard. If no watering log, show nothing (don't show 'Never' — that's noise).",
-          "passes": false
+          "passes": true
         },
         {
           "id": "dashboard-weather-widget",
           "category": "frontend",
           "description": "Optional weather widget in dashboard header. Use Open-Meteo free API (no key needed) with lat/lon from Settings. Show current temp and humidity — relevant context for plant care. If no location configured, hide widget entirely.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "fullscreen-kiosk-mode",
           "category": "frontend",
           "description": "Add kiosk mode toggle (button in navbar). Hides sidebar and navbar, shows just plant cards in a large grid. Auto-cycles through zones every 30s. Good for a wall-mounted tablet display.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "dashboard-quick-actions",
           "category": "frontend",
           "description": "Add quick action buttons on PlantCard hover/tap: 'Log Watering' (if watering log feature exists), 'Set Threshold', 'View History'. Reduces clicks to common actions.",
-          "passes": false
+          "passes": true
         }
       ]
     },

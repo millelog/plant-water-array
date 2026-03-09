@@ -33,6 +33,8 @@ def upgrade_db():
             "ALTER TABLE system_config ADD COLUMN ntfy_server_url TEXT DEFAULT 'https://ntfy.sh'",
             "ALTER TABLE system_config ADD COLUMN ntfy_topic TEXT",
             "ALTER TABLE devices ADD COLUMN offline_notified BOOLEAN DEFAULT 0",
+            "ALTER TABLE system_config ADD COLUMN weather_latitude FLOAT",
+            "ALTER TABLE system_config ADD COLUMN weather_longitude FLOAT",
         ]
         for sql in migrations:
             try:

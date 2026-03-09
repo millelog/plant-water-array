@@ -221,6 +221,8 @@ class SystemConfigBase(BaseModel):
     ntfy_enabled: bool = False
     ntfy_server_url: str = "https://ntfy.sh"
     ntfy_topic: Optional[str] = None
+    weather_latitude: Optional[float] = None
+    weather_longitude: Optional[float] = None
 
 
 class SystemConfigUpdate(BaseModel):
@@ -231,6 +233,8 @@ class SystemConfigUpdate(BaseModel):
     ntfy_enabled: Optional[bool] = None
     ntfy_server_url: Optional[str] = None
     ntfy_topic: Optional[str] = None
+    weather_latitude: Optional[float] = None
+    weather_longitude: Optional[float] = None
 
 
 class SystemConfig(SystemConfigBase):

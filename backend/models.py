@@ -107,6 +107,8 @@ class SystemConfig(Base):
     ntfy_enabled = Column(Boolean, default=False)
     ntfy_server_url = Column(String, default="https://ntfy.sh")
     ntfy_topic = Column(String, nullable=True)
+    weather_latitude = Column(Float, nullable=True)
+    weather_longitude = Column(Float, nullable=True)
 
 
 class WateringLog(Base):

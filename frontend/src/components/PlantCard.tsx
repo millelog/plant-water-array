@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SensorSummary } from '../types';
 import SparklineChart from './SparklineChart';
 import InlineEdit from './InlineEdit';
+import LogWateringModal from './LogWateringModal';
 import { updateSensor } from '../api/api';
 
 interface PlantCardProps {
   sensor: SensorSummary;
   onNameChange?: () => void;
+  onRefresh?: () => void;
 }
 
 function getMoistureColor(value: number): string {
@@ -40,8 +42,10 @@ function getTrendArrow(trend: string) {
   }
 }
 
-const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange }) => {
+const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange, onRefresh }) => {
   const displayName = sensor.name || `Sensor ${sensor.sensor_id}`;
+  const [showWateringModal, setShowWateringModal] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   const handleRename = async (newName: string) => {
     await updateSensor(sensor.id, { name: newName });
@@ -49,63 +53,99 @@ const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange }) => {
   };
 
   return (
-    <div className="card p-4 flex flex-col gap-3 hover:shadow-card-hover">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <InlineEdit
-            value={displayName}
-            onSave={handleRename}
-            className="font-body font-semibold text-text text-sm"
-            placeholder="Name this plant"
-          />
-          <div className="text-[11px] text-text-muted font-mono mt-0.5 truncate">
-            on {sensor.device_name}
-          </div>
-        </div>
-        {getStatusBadge(sensor.status)}
-      </div>
-
-      {sensor.current_moisture !== null ? (
-        <>
-          <div className="flex items-baseline gap-2">
-            <span className={`text-2xl font-mono font-bold ${getMoistureColor(sensor.current_moisture)}`}>
-              {sensor.current_moisture.toFixed(1)}%
-            </span>
-            {getTrendArrow(sensor.trend)}
-          </div>
-          <div className="moisture-bar">
-            <div
-              className="moisture-bar-fill"
-              style={{ width: `${Math.min(100, Math.max(0, sensor.current_moisture))}%` }}
+    <>
+      <div
+        className="card p-4 flex flex-col gap-3 hover:shadow-card-hover group relative overflow-hidden"
+        onTouchStart={() => setShowActions(prev => !prev)}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <InlineEdit
+              value={displayName}
+              onSave={handleRename}
+              className="font-body font-semibold text-text text-sm"
+              placeholder="Name this plant"
             />
+            <div className="text-[11px] text-text-muted font-mono mt-0.5 truncate">
+              on {sensor.device_name}
+            </div>
           </div>
-        </>
-      ) : (
-        <div className="text-sm text-text-muted italic py-2">No readings yet</div>
-      )}
-
-      <SparklineChart data={sensor.sparkline} />
-
-      {sensor.days_since_watered !== null && (
-        <div className="text-[11px] text-text-muted font-mono">
-          {sensor.days_since_watered === 0 ? 'Watered today' : `Watered ${sensor.days_since_watered}d ago`}
+          {getStatusBadge(sensor.status)}
         </div>
-      )}
 
-      <div className="flex items-center justify-between mt-auto pt-1">
-        {sensor.last_reading_time && (
-          <span className="text-[11px] text-text-muted font-mono">
-            {formatTimeAgo(sensor.last_reading_time)}
-          </span>
+        {sensor.current_moisture !== null ? (
+          <>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-2xl font-mono font-bold ${getMoistureColor(sensor.current_moisture)}`}>
+                {sensor.current_moisture.toFixed(1)}%
+              </span>
+              {getTrendArrow(sensor.trend)}
+            </div>
+            <div className="moisture-bar">
+              <div
+                className="moisture-bar-fill"
+                style={{ width: `${Math.min(100, Math.max(0, sensor.current_moisture))}%` }}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="text-sm text-text-muted italic py-2">No readings yet</div>
         )}
-        <Link
-          to={`/plant/${sensor.id}`}
-          className="text-xs text-accent hover:text-accent-dim font-medium transition-colors ml-auto"
-        >
-          Details &rarr;
-        </Link>
+
+        <SparklineChart data={sensor.sparkline} />
+
+        {sensor.days_since_watered !== null && (
+          <div className="text-[11px] text-text-muted font-mono">
+            {sensor.days_since_watered === 0 ? 'Watered today' : `Watered ${sensor.days_since_watered}d ago`}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mt-auto pt-1">
+          {sensor.last_reading_time && (
+            <span className="text-[11px] text-text-muted font-mono">
+              {formatTimeAgo(sensor.last_reading_time)}
+            </span>
+          )}
+          <Link
+            to={`/plant/${sensor.id}`}
+            className="text-xs text-accent hover:text-accent-dim font-medium transition-colors ml-auto"
+          >
+            Details &rarr;
+          </Link>
+        </div>
+
+        {/* Quick actions overlay */}
+        <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-canvas-50 via-canvas-50/95 to-transparent pt-8 pb-3 px-4 flex items-end justify-center gap-2 transition-opacity ${showActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto'}`}>
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowWateringModal(true); }}
+            className="px-3 py-1.5 rounded-lg text-xs font-mono bg-accent-glow text-accent border border-accent/20 hover:bg-accent hover:text-canvas transition-colors"
+          >
+            Log Watering
+          </button>
+          <Link
+            to={`/plant/${sensor.id}#threshold`}
+            onClick={(e) => e.stopPropagation()}
+            className="px-3 py-1.5 rounded-lg text-xs font-mono text-text-muted border border-surface-border hover:text-text hover:bg-canvas-200 transition-colors"
+          >
+            Threshold
+          </Link>
+          <Link
+            to={`/plant/${sensor.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="px-3 py-1.5 rounded-lg text-xs font-mono text-text-muted border border-surface-border hover:text-text hover:bg-canvas-200 transition-colors"
+          >
+            History
+          </Link>
+        </div>
       </div>
-    </div>
+
+      <LogWateringModal
+        sensorId={sensor.id}
+        open={showWateringModal}
+        onClose={() => setShowWateringModal(false)}
+        onLogged={() => onRefresh?.()}
+      />
+    </>
   );
 };
 

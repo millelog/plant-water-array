@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { BellIcon } from '@heroicons/react/24/outline';
+import { BellIcon, ComputerDesktopIcon } from '@heroicons/react/24/outline';
 import { useAlerts } from '../context/AlertContext';
+import { useKiosk } from '../context/KioskContext';
 import { markAlertAsRead, markAllAlertsRead } from '../api/api';
 import * as Toast from '@radix-ui/react-toast';
 
@@ -19,6 +20,7 @@ const pageTitles: Record<string, string> = {
 const Navbar: React.FC = () => {
   const location = useLocation();
   const { unreadCount, recentAlerts, refreshAlerts } = useAlerts();
+  const { toggleKiosk } = useKiosk();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -65,6 +67,15 @@ const Navbar: React.FC = () => {
       <header className="flex items-center justify-between px-6 lg:px-10 py-4 border-b border-surface-border bg-canvas-50/60 backdrop-blur-sm">
         <h1 className="page-title">{title}</h1>
         <div className="flex items-center gap-4">
+          {/* Kiosk mode toggle */}
+          <button
+            onClick={toggleKiosk}
+            className="p-2 rounded-xl text-text-secondary hover:text-text hover:bg-canvas-200 transition-colors"
+            title="Kiosk Mode"
+          >
+            <ComputerDesktopIcon className="w-5 h-5" />
+          </button>
+
           {/* Alert bell */}
           <div className="relative" ref={dropdownRef}>
             <button
