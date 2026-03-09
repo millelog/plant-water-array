@@ -40,22 +40,30 @@ const Devices: React.FC = () => {
     fetchDevices();
   }
 
-  function getStatus(lastSeen?: string): { label: string; colorClass: string } {
+  function getStatus(lastSeen?: string): { label: string; dotClass: string } {
     if (!lastSeen) {
-      return { label: 'Provisioning', colorClass: 'bg-amber-400' };
+      return { label: 'Provisioning', dotClass: 'status-dot--provisioning' };
     }
     const now = new Date();
     const seen = new Date(lastSeen);
     const online = (now.getTime() - seen.getTime()) < 5 * 60 * 1000;
     if (online) {
-      return { label: 'Online', colorClass: 'bg-green-500' };
+      return { label: 'Online', dotClass: 'status-dot--online' };
     }
-    return { label: 'Offline', colorClass: 'bg-gray-400' };
+    return { label: 'Offline', dotClass: 'status-dot--offline' };
   }
 
   const deviceColumns = [
-    { Header: 'Device ID', accessor: 'device_id' },
-    { Header: 'Name', accessor: 'name' },
+    {
+      Header: 'Device',
+      accessor: 'name',
+      Cell: ({ value }: { value: string }, row: Device) => (
+        <div>
+          <div className="text-text font-medium">{value}</div>
+          <div className="text-xs text-text-muted font-mono">{row.device_id}</div>
+        </div>
+      ),
+    },
     {
       Header: 'Status',
       accessor: 'last_seen',
@@ -63,8 +71,8 @@ const Devices: React.FC = () => {
         const status = getStatus(value);
         return (
           <span className="flex items-center gap-2">
-            <span className={`inline-block w-2.5 h-2.5 rounded-full ${status.colorClass}`} />
-            {status.label}
+            <span className={`status-dot ${status.dotClass}`} />
+            <span className="text-sm">{status.label}</span>
           </span>
         );
       },
@@ -72,26 +80,30 @@ const Devices: React.FC = () => {
     {
       Header: 'Firmware',
       accessor: 'firmware_version',
-      Cell: ({ value }: { value: string | undefined }) => value || '-',
+      Cell: ({ value }: { value: string | undefined }) =>
+        value ? <span className="badge bg-canvas-200 text-text-muted border border-surface-border">v{value}</span> : <span className="text-text-muted">&mdash;</span>,
     },
     {
       Header: 'IP Address',
       accessor: 'ip_address',
-      Cell: ({ value }: { value: string | undefined }) => value ? <span className="font-mono text-sm">{value}</span> : '-',
+      Cell: ({ value }: { value: string | undefined }) =>
+        value ? <span className="data-value text-sm">{value}</span> : <span className="text-text-muted">&mdash;</span>,
     },
     {
       Header: 'Last Seen',
       accessor: 'last_seen_time',
-      Cell: (_: { value: unknown }, row: Device) => row.last_seen ? timeAgo(row.last_seen) : 'Never',
+      Cell: (_: { value: unknown }, row: Device) =>
+        row.last_seen
+          ? <span className="text-sm font-mono text-text-secondary">{timeAgo(row.last_seen)}</span>
+          : <span className="text-text-muted">Never</span>,
     },
     {
-      Header: 'Actions',
+      Header: '',
       accessor: 'actions',
       Cell: (_: { value: unknown }, row: Device) => (
-        <div className="flex gap-2">
-          <button className="text-blue-600 hover:underline">View Sensors</button>
+        <div className="flex gap-2 justify-end">
           <button
-            className="text-red-600 hover:underline"
+            className="btn-danger text-xs py-1.5 px-3"
             onClick={() => handleDeleteDevice(row.device_id, row.name)}
           >
             Delete
@@ -102,25 +114,34 @@ const Devices: React.FC = () => {
   ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Devices</h1>
-
+    <div className="space-y-6 animate-fade-in">
       {devices.length === 0 ? (
-        <div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center mb-6">
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">No Devices Yet</h2>
-            <p className="text-blue-700 mb-4">Follow the setup instructions below to provision your first ESP32 plant sensor.</p>
+        <div className="space-y-6">
+          <div className="card p-10 text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-accent-glow border border-accent/20 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-accent">
+                <rect x="4" y="2" width="16" height="20" rx="3" stroke="currentColor" strokeWidth="1.5"/>
+                <circle cx="12" cy="17" r="1.5" fill="currentColor"/>
+              </svg>
+            </div>
+            <div className="text-text font-medium mb-1">No Devices Yet</div>
+            <div className="text-sm text-text-muted mb-4">Follow the setup instructions below to provision your first ESP32 sensor.</div>
           </div>
           <DeviceSetupInstructions />
         </div>
       ) : (
         <>
-          <button
-            onClick={() => setShowInstructions(!showInstructions)}
-            className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
-          >
-            {showInstructions ? 'Hide' : 'Show'} Setup Instructions
-          </button>
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-text-muted">
+              <span className="data-value">{devices.length}</span> device{devices.length !== 1 ? 's' : ''} registered
+            </div>
+            <button
+              onClick={() => setShowInstructions(!showInstructions)}
+              className="btn-secondary text-xs"
+            >
+              {showInstructions ? 'Hide' : 'Show'} Setup Guide
+            </button>
+          </div>
           {showInstructions && <DeviceSetupInstructions />}
           <DataTable columns={deviceColumns} data={devices} />
         </>

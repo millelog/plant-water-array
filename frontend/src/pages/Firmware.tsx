@@ -63,37 +63,50 @@ const Firmware: React.FC = () => {
   }
 
   const columns = [
-    { Header: 'Version', accessor: 'version' },
+    {
+      Header: 'Version',
+      accessor: 'version',
+      Cell: ({ value }: { value: string }) => (
+        <span className="badge bg-canvas-200 text-text-secondary border border-surface-border">v{value}</span>
+      ),
+    },
     {
       Header: 'Upload Date',
       accessor: 'upload_timestamp',
-      Cell: ({ value }: { value: string }) =>
-        new Date(value).toLocaleDateString() + ' ' + new Date(value).toLocaleTimeString(),
+      Cell: ({ value }: { value: string }) => (
+        <span className="text-sm font-mono text-text-secondary">
+          {new Date(value).toLocaleDateString()} {new Date(value).toLocaleTimeString()}
+        </span>
+      ),
     },
     {
       Header: 'Size',
       accessor: 'size_bytes',
-      Cell: ({ value }: { value: number }) => formatBytes(value),
+      Cell: ({ value }: { value: number }) => (
+        <span className="data-value text-sm">{formatBytes(value)}</span>
+      ),
     },
     {
       Header: 'Checksum',
       accessor: 'checksum',
       Cell: ({ value }: { value: string }) => (
-        <span className="font-mono text-xs">{value.substring(0, 12)}...</span>
+        <span className="font-mono text-xs text-text-muted">{value.substring(0, 12)}...</span>
       ),
     },
     {
       Header: 'Notes',
       accessor: 'notes',
-      Cell: ({ value }: { value: string | null }) => value || '-',
+      Cell: ({ value }: { value: string | null }) => (
+        <span className="text-sm text-text-secondary">{value || '\u2014'}</span>
+      ),
     },
     {
-      Header: 'Actions',
+      Header: '',
       accessor: 'actions',
       Cell: (_: { value: unknown }, row: FirmwareInfo) => (
         <button
           onClick={() => handleDelete(row.version)}
-          className="text-red-600 hover:underline"
+          className="btn-danger text-xs py-1.5 px-3"
         >
           Delete
         </button>
@@ -102,60 +115,66 @@ const Firmware: React.FC = () => {
   ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Firmware Management</h1>
-
-      <form className="mb-6 bg-white shadow-md rounded-lg p-6" onSubmit={handleUpload}>
-        <h2 className="text-lg font-semibold mb-3">Upload New Firmware</h2>
+    <div className="space-y-6 animate-fade-in">
+      {/* Upload form */}
+      <div className="card p-5">
+        <div className="section-title mb-4">Upload Firmware</div>
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-3">
+          <div className="mb-4 p-3 rounded-xl bg-danger-glow border border-danger/20 text-sm text-danger">
             {error}
           </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Version</label>
+        <form onSubmit={handleUpload}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="text-xs font-mono text-text-muted uppercase tracking-wider block mb-1.5">Version</label>
+              <input
+                type="text"
+                placeholder="e.g. 1.0.1"
+                value={version}
+                onChange={(e) => setVersion(e.target.value)}
+                className="input"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs font-mono text-text-muted uppercase tracking-wider block mb-1.5">Notes</label>
+              <input
+                type="text"
+                placeholder="Optional release notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="input"
+              />
+            </div>
+          </div>
+          <div className="mb-4">
+            <label className="text-xs font-mono text-text-muted uppercase tracking-wider block mb-1.5">Firmware Files (.py)</label>
             <input
-              type="text"
-              placeholder="e.g. 1.0.1"
-              value={version}
-              onChange={(e) => setVersion(e.target.value)}
-              className="border p-2 w-full rounded"
-              required
+              type="file"
+              multiple
+              accept=".py"
+              onChange={(e) => setFiles(Array.from(e.target.files || []))}
+              className="input file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0
+                         file:text-xs file:font-medium file:bg-accent-glow file:text-accent
+                         file:cursor-pointer hover:file:bg-accent/20"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-            <input
-              type="text"
-              placeholder="Optional release notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="border p-2 w-full rounded"
-            />
-          </div>
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Firmware Files (.py)</label>
-          <input
-            type="file"
-            multiple
-            accept=".py"
-            onChange={(e) => setFiles(Array.from(e.target.files || []))}
-            className="border p-2 w-full rounded"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={uploading}
-          className="bg-blue-600 text-white px-6 py-2 rounded disabled:opacity-50"
-        >
-          {uploading ? 'Uploading...' : 'Upload Firmware'}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={uploading}
+            className="btn-primary"
+          >
+            {uploading ? 'Uploading...' : 'Upload Firmware'}
+          </button>
+        </form>
+      </div>
 
-      <h2 className="text-lg font-semibold mb-3">Available Versions</h2>
-      <DataTable columns={columns} data={firmwareList} />
+      {/* Firmware list */}
+      <div>
+        <div className="section-title mb-3">Available Versions</div>
+        <DataTable columns={columns} data={firmwareList} />
+      </div>
     </div>
   );
 };

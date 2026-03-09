@@ -36,18 +36,15 @@ const Readings: React.FC = () => {
     }
   }, [urlSensorId]);
 
-
   useEffect(() => {
     fetchDevices();
   }, [fetchDevices]);
 
   useEffect(() => {
     if (selectedDeviceId) {
-      // Clear sensors before fetching new ones
       setSensors([]);
       fetchSensors(selectedDeviceId);
     } else {
-      // If no device is selected, clear the sensors
       setSensors([]);
     }
   }, [selectedDeviceId, fetchSensors]);
@@ -55,14 +52,10 @@ const Readings: React.FC = () => {
   const fetchReadings = useCallback(async (deviceId: string, sensorId: number) => {
     try {
       const readingsData = await getReadings(deviceId, sensorId);
-      // Ensure timestamps are strings and log each reading
-      const formattedReadings = readingsData.map(reading => {
-        const formattedReading = {
-          ...reading,
-          timestamp: reading.timestamp.toString()
-        };
-        return formattedReading;
-      });
+      const formattedReadings = readingsData.map(reading => ({
+        ...reading,
+        timestamp: reading.timestamp.toString()
+      }));
       setReadings(formattedReadings);
     } catch (err) {
       setError('Failed to fetch readings');
@@ -92,80 +85,92 @@ const Readings: React.FC = () => {
   };
 
   const readingsColumns = useMemo(() => [
-    { Header: 'Sensor ID', accessor: 'sensor_id' },
-    { Header: 'Moisture', accessor: 'moisture' },
+    { Header: 'Sensor ID', accessor: 'sensor_id',
+      Cell: ({ value }: { value: number }) => <span className="data-value text-sm">{value}</span>,
+    },
+    { Header: 'Moisture', accessor: 'moisture',
+      Cell: ({ value }: { value: number }) => <span className="data-value text-sm">{value.toFixed(2)}%</span>,
+    },
     {
       Header: 'Raw ADC',
       accessor: 'raw_adc',
       Cell: ({ value }: { value: number | null | undefined }) =>
-        value != null ? value : '--',
+        value != null ? <span className="font-mono text-sm text-text-secondary">{value}</span> : <span className="text-text-muted">&mdash;</span>,
     },
     {
       Header: 'Timestamp',
       accessor: 'timestamp',
       Cell: ({ value }: { value: string }) => {
-        if (!value) return 'N/A';
+        if (!value) return <span className="text-text-muted">N/A</span>;
         try {
-          // Remove microseconds from the timestamp
           const timestampWithoutMicroseconds = value.replace(/\.\d+/, '');
-          return new Date(timestampWithoutMicroseconds).toLocaleString() || 'Invalid Date';
+          return <span className="text-sm font-mono text-text-secondary">{new Date(timestampWithoutMicroseconds).toLocaleString()}</span>;
         } catch (error) {
-          console.error('Error parsing date:', error);
-          return 'Invalid Date';
+          return <span className="text-text-muted">Invalid Date</span>;
         }
       },
     },
   ], []);
 
-
-
-
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold mb-4">Readings</h1>
-      {error && <div className="text-red-500 mb-4">{error}</div>}
-      <div className="flex space-x-4 mb-4">
-        <select
-          className="form-select"
-          value={selectedDeviceId}
-          onChange={handleDeviceChange}
-        >
-          <option value="">Select a device</option>
-          {devices.map((device) => (
-            <option key={device.device_id} value={device.device_id}>
-              {device.name}
-            </option>
-          ))}
-        </select>
-        <select
-          className="form-select"
-          value={selectedSensorId || ''}
-          onChange={handleSensorChange}
-          disabled={!selectedDeviceId}
-        >
-          <option value="">Select a sensor</option>
-          {sensors.map((sensor) => (
-            <option key={sensor.id} value={sensor.sensor_id}>
-              {sensor.name || `Sensor ${sensor.sensor_id}`}
-            </option>
-          ))}
-        </select>
+    <div className="space-y-6 animate-fade-in">
+      {error && (
+        <div className="card p-4 border-danger/20 bg-danger-glow">
+          <span className="text-sm text-danger">{error}</span>
+        </div>
+      )}
+
+      {/* Selectors */}
+      <div className="card p-5">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="sm:flex-1">
+            <label className="text-xs font-mono text-text-muted uppercase tracking-wider block mb-1.5">Device</label>
+            <select className="input" value={selectedDeviceId} onChange={handleDeviceChange}>
+              <option value="">Select a device</option>
+              {devices.map((device) => (
+                <option key={device.device_id} value={device.device_id}>
+                  {device.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:flex-1">
+            <label className="text-xs font-mono text-text-muted uppercase tracking-wider block mb-1.5">Sensor</label>
+            <select
+              className="input"
+              value={selectedSensorId || ''}
+              onChange={handleSensorChange}
+              disabled={!selectedDeviceId}
+            >
+              <option value="">Select a sensor</option>
+              {sensors.map((sensor) => (
+                <option key={sensor.id} value={sensor.sensor_id}>
+                  {sensor.name || `Sensor ${sensor.sensor_id}`}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
+
       {selectedDeviceId && selectedSensorId !== null && readings.length > 0 && (
         <>
-          <div className="bg-white shadow-md rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Sensor Readings Graph</h2>
+          <div className="card p-5">
+            <div className="section-title mb-4">Moisture Over Time</div>
             <SensorReadingsGraph readings={readings} />
           </div>
-          <div className="bg-white shadow-md rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Readings Table</h2>
-            <DataTable 
-              columns={readingsColumns} 
-              data={readings} 
-              key={`${selectedDeviceId}-${selectedSensorId}`} 
-            />
-          </div>
+          <DataTable
+            columns={readingsColumns}
+            data={readings}
+            key={`${selectedDeviceId}-${selectedSensorId}`}
+          />
         </>
+      )}
+
+      {selectedDeviceId && selectedSensorId !== null && readings.length === 0 && (
+        <div className="card p-10 text-center">
+          <div className="text-text-muted text-sm">No readings found for this sensor.</div>
+        </div>
       )}
     </div>
   );

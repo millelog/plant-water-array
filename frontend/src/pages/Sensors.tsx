@@ -46,17 +46,39 @@ const Sensors: React.FC = () => {
   }
 
   const sensorColumns = [
-    { Header: 'Sensor ID', accessor: 'sensor_id' },
-    { Header: 'Device ID', accessor: 'device.device_id' },
-    { Header: 'Device Name', accessor: 'device.name' },
-    { Header: 'Sensor Name', accessor: 'name' }, // Changed this line
+    {
+      Header: 'Sensor',
+      accessor: 'name',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Cell: ({ value }: { value: string | null }, row: any) => (
+        <div>
+          <div className="text-text font-medium">{value || `Sensor ${row.sensor_id}`}</div>
+          <div className="text-xs text-text-muted font-mono">ID: {row.sensor_id}</div>
+        </div>
+      ),
+    },
+    {
+      Header: 'Device',
+      accessor: 'device.name',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Cell: ({ value }: { value: string }, row: any) => (
+        <div>
+          <div className="text-text-secondary text-sm">{value}</div>
+          <div className="text-xs text-text-muted font-mono">{row.device?.device_id || row.device_id}</div>
+        </div>
+      ),
+    },
     {
       Header: 'Threshold',
       accessor: 'threshold',
       Cell: ({ value }: { value: Sensor['threshold'] }) =>
-        value
-          ? `${value.min_moisture ?? 'N/A'} - ${value.max_moisture ?? 'N/A'}`
-          : 'Not Set',
+        value ? (
+          <span className="data-value text-sm">
+            {value.min_moisture ?? '—'} – {value.max_moisture ?? '—'}%
+          </span>
+        ) : (
+          <span className="text-text-muted text-sm">Not set</span>
+        ),
     },
     {
       Header: 'Calibration',
@@ -64,20 +86,21 @@ const Sensors: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       Cell: (_props: any, row: any) => {
         const calibrated = row.calibration_dry !== null && row.calibration_wet !== null;
-        return calibrated
-          ? <span className="text-green-600 font-medium">Calibrated</span>
-          : <span className="text-amber-600">Not calibrated</span>;
+        return calibrated ? (
+          <span className="badge bg-accent-glow text-accent border border-accent/15">Calibrated</span>
+        ) : (
+          <span className="badge bg-soil-glow text-soil border border-soil/15">Uncalibrated</span>
+        );
       },
     },
     {
-      Header: 'Actions',
+      Header: '',
       accessor: 'actions',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       Cell: (_props: any, row: any) => (
-        <div className="flex gap-2">
-          <button className="text-blue-600 hover:underline">Set Threshold</button>
+        <div className="flex gap-2 justify-end">
           <button
-            className="text-purple-600 hover:underline"
+            className="btn-secondary text-xs py-1.5 px-3"
             onClick={() => setCalibratingSensor(row as Sensor)}
           >
             Calibrate
@@ -88,53 +111,49 @@ const Sensors: React.FC = () => {
   ];
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Sensors</h1>
-      <form className="mb-4" onSubmit={handleCreateSensor}>
-        <div className="flex space-x-2">
-          <select
-            value={newSensor.device_id || ''}
-            onChange={(e) =>
-              setNewSensor({ ...newSensor, device_id: e.target.value })
-            }
-            className="border p-2 flex-1"
-            required
-          >
-            <option value="">Select Device</option>
-            {devices.map((device) => (
-              <option key={device.id} value={device.device_id}>
-                {device.name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            placeholder="Sensor ID"
-            value={newSensor.sensor_id || ''}
-            onChange={(e) =>
-              setNewSensor({ ...newSensor, sensor_id: Number(e.target.value) })
-            }
-            className="border p-2 flex-1"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Name"
-            value={newSensor.name || ''}
-            onChange={(e) =>
-              setNewSensor({ ...newSensor, name: e.target.value })
-            }
-            className="border p-2 flex-1"
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Add Sensor
-          </button>
-        </div>
-      </form>
+    <div className="space-y-6 animate-fade-in">
+      {/* Add sensor form */}
+      <div className="card p-5">
+        <div className="section-title mb-4">Add Sensor</div>
+        <form onSubmit={handleCreateSensor}>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <select
+              value={newSensor.device_id || ''}
+              onChange={(e) => setNewSensor({ ...newSensor, device_id: e.target.value })}
+              className="input sm:flex-1"
+              required
+            >
+              <option value="">Select Device</option>
+              {devices.map((device) => (
+                <option key={device.id} value={device.device_id}>
+                  {device.name}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              placeholder="Sensor ID"
+              value={newSensor.sensor_id || ''}
+              onChange={(e) => setNewSensor({ ...newSensor, sensor_id: Number(e.target.value) })}
+              className="input sm:flex-1"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Sensor Name"
+              value={newSensor.name || ''}
+              onChange={(e) => setNewSensor({ ...newSensor, name: e.target.value })}
+              className="input sm:flex-1"
+            />
+            <button type="submit" className="btn-primary whitespace-nowrap">
+              Add Sensor
+            </button>
+          </div>
+        </form>
+      </div>
+
       <DataTable columns={sensorColumns} data={sensors} />
+
       {calibratingSensor && (
         <CalibrationWizard
           sensor={calibratingSensor}

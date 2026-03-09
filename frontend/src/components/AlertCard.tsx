@@ -10,24 +10,34 @@ interface AlertCardProps {
 const AlertCard: React.FC<AlertCardProps> = ({ alert, onMarkAsRead }) => {
   return (
     <div
-      className={`border p-4 rounded mb-2 ${
-        alert.read ? 'bg-gray-100' : 'bg-red-100'
+      className={`card p-4 mb-3 transition-all duration-200 ${
+        alert.read
+          ? 'opacity-60'
+          : 'border-danger/20 bg-danger-glow shadow-[0_0_16px_rgba(248,113,113,0.06)]'
       }`}
     >
-      <div className="flex items-center">
-        <ExclamationTriangleIcon className="w-6 h-6 text-red-600 mr-2" />
-        <div className="flex-1">
-          <div className="font-bold">{alert.message}</div>
-          <div className="text-sm text-gray-600">
+      <div className="flex items-start gap-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+          alert.read ? 'bg-canvas-200' : 'bg-danger/10'
+        }`}>
+          <ExclamationTriangleIcon className={`w-4 h-4 ${
+            alert.read ? 'text-text-muted' : 'text-danger'
+          }`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className={`text-sm font-medium ${alert.read ? 'text-text-secondary' : 'text-text'}`}>
+            {alert.message}
+          </div>
+          <div className="text-xs text-text-muted font-mono mt-1">
             {new Date(alert.timestamp).toLocaleString()}
           </div>
         </div>
         {!alert.read && (
           <button
             onClick={() => onMarkAsRead(alert.id)}
-            className="text-blue-600 hover:underline"
+            className="btn-ghost text-xs flex-shrink-0"
           >
-            Mark as Read
+            Dismiss
           </button>
         )}
       </div>

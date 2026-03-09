@@ -12,6 +12,12 @@ interface CalibrationWizardProps {
 
 type Step = 'dry' | 'wet' | 'confirm';
 
+const steps: { key: Step; label: string; number: number }[] = [
+  { key: 'dry', label: 'Dry', number: 1 },
+  { key: 'wet', label: 'Wet', number: 2 },
+  { key: 'confirm', label: 'Confirm', number: 3 },
+];
+
 const CalibrationWizard: React.FC<CalibrationWizardProps> = ({ sensor, open, onClose, onCalibrated }) => {
   const [step, setStep] = useState<Step>('dry');
   const [liveRaw, setLiveRaw] = useState<number | null>(null);
@@ -109,24 +115,52 @@ const CalibrationWizard: React.FC<CalibrationWizardProps> = ({ sensor, open, onC
   };
 
   const isCalibrated = sensor.calibration_dry !== null && sensor.calibration_wet !== null;
+  const currentStepIndex = steps.findIndex(s => s.key === step);
 
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-          <Dialog.Title className="text-xl font-bold mb-4">
-            Calibrate: {sensor.name || `Sensor ${sensor.sensor_id}`}
+        <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                                   bg-canvas-50 border border-surface-border rounded-2xl shadow-card
+                                   p-6 w-full max-w-md animate-slide-up">
+          <Dialog.Title className="font-display text-xl text-text mb-1">
+            Calibrate Sensor
           </Dialog.Title>
+          <div className="text-sm text-text-muted mb-5">
+            {sensor.name || `Sensor ${sensor.sensor_id}`}
+          </div>
+
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 mb-6">
+            {steps.map((s, i) => (
+              <React.Fragment key={s.key}>
+                <div className={`flex items-center gap-2 ${i <= currentStepIndex ? 'text-accent' : 'text-text-muted'}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono font-bold
+                    ${i < currentStepIndex ? 'bg-accent text-canvas' :
+                      i === currentStepIndex ? 'bg-accent-glow border border-accent/30 text-accent' :
+                      'bg-canvas-200 text-text-muted border border-surface-border'}`}>
+                    {i < currentStepIndex ? '✓' : s.number}
+                  </div>
+                  <span className="text-xs font-medium hidden sm:inline">{s.label}</span>
+                </div>
+                {i < steps.length - 1 && (
+                  <div className={`flex-1 h-px ${i < currentStepIndex ? 'bg-accent/40' : 'bg-surface-border'}`} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
 
           {isCalibrated && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
-              <p className="font-medium text-blue-800">Current calibration</p>
-              <p className="text-blue-700">Dry: {sensor.calibration_dry} | Wet: {sensor.calibration_wet}</p>
+            <div className="mb-4 p-3 rounded-xl bg-accent-glow border border-accent/15 text-sm">
+              <p className="font-medium text-accent text-xs uppercase tracking-wider mb-1">Current Calibration</p>
+              <p className="text-text-secondary font-mono text-sm">
+                Dry: {sensor.calibration_dry} &middot; Wet: {sensor.calibration_wet}
+              </p>
               <button
                 onClick={handleClear}
                 disabled={saving}
-                className="mt-2 text-red-600 hover:underline text-sm"
+                className="mt-2 text-danger text-xs font-medium hover:underline"
               >
                 Clear Calibration
               </button>
@@ -134,27 +168,27 @@ const CalibrationWizard: React.FC<CalibrationWizardProps> = ({ sensor, open, onC
           )}
 
           {noData && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
-              No raw ADC data available. Make sure the sensor is sending readings with updated firmware.
+            <div className="mb-4 p-3 rounded-xl bg-soil-glow border border-soil/15 text-sm text-soil">
+              No raw ADC data available. Make sure the sensor is sending readings.
             </div>
           )}
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
+            <div className="mb-4 p-3 rounded-xl bg-danger-glow border border-danger/20 text-sm text-danger">
               {error}
             </div>
           )}
 
           {/* Live ADC display */}
           {(step === 'dry' || step === 'wet') && (
-            <div className="mb-4 p-4 bg-gray-50 rounded border">
-              <div className="text-sm text-gray-500">Live Raw ADC</div>
-              <div className="text-3xl font-mono font-bold">
+            <div className="mb-5 p-4 rounded-xl bg-canvas-100 border border-surface-border">
+              <div className="text-xs font-mono text-text-muted uppercase tracking-wider mb-1">Live Raw ADC</div>
+              <div className="text-4xl font-mono font-bold text-accent">
                 {liveRaw !== null ? liveRaw : '--'}
               </div>
               {liveTimestamp && (
-                <div className="text-xs text-gray-400 mt-1">
-                  Last reading: {formatTimestamp(liveTimestamp)}
+                <div className="text-xs text-text-muted font-mono mt-1">
+                  {formatTimestamp(liveTimestamp)}
                 </div>
               )}
             </div>
@@ -163,13 +197,13 @@ const CalibrationWizard: React.FC<CalibrationWizardProps> = ({ sensor, open, onC
           {/* Step 1: Dry */}
           {step === 'dry' && (
             <div>
-              <p className="mb-4 text-gray-600">
-                Place the sensor in <strong>dry air</strong> (or dry soil), then record the value once it stabilizes.
+              <p className="mb-4 text-sm text-text-secondary">
+                Place the sensor in <strong className="text-text">dry air</strong> or dry soil, then record the value once it stabilizes.
               </p>
               <button
                 onClick={handleRecordDry}
                 disabled={liveRaw === null}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary w-full justify-center"
               >
                 Record Dry Value
               </button>
@@ -179,16 +213,17 @@ const CalibrationWizard: React.FC<CalibrationWizardProps> = ({ sensor, open, onC
           {/* Step 2: Wet */}
           {step === 'wet' && (
             <div>
-              <div className="mb-3 p-2 bg-green-50 border border-green-200 rounded text-sm">
-                Dry value recorded: <strong className="font-mono">{dryValue}</strong>
+              <div className="mb-3 p-3 rounded-xl bg-accent-glow border border-accent/15 text-sm">
+                <span className="text-text-muted">Dry value:</span>{' '}
+                <span className="font-mono font-bold text-accent">{dryValue}</span>
               </div>
-              <p className="mb-4 text-gray-600">
-                Now place the sensor in <strong>water</strong> (or fully saturated soil), then record the value once it stabilizes.
+              <p className="mb-4 text-sm text-text-secondary">
+                Now place the sensor in <strong className="text-text">water</strong> or saturated soil, then record the value.
               </p>
               <button
                 onClick={handleRecordWet}
                 disabled={liveRaw === null}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary w-full justify-center"
               >
                 Record Wet Value
               </button>
@@ -199,40 +234,42 @@ const CalibrationWizard: React.FC<CalibrationWizardProps> = ({ sensor, open, onC
           {step === 'confirm' && (
             <div>
               <div className="mb-4 space-y-2">
-                <div className="p-3 bg-gray-50 rounded border flex justify-between">
-                  <span className="text-gray-600">Dry (air)</span>
-                  <span className="font-mono font-bold">{dryValue}</span>
+                <div className="p-3 rounded-xl bg-canvas-100 border border-surface-border flex justify-between items-center">
+                  <span className="text-sm text-text-muted">Dry (air)</span>
+                  <span className="font-mono font-bold text-text">{dryValue}</span>
                 </div>
-                <div className="p-3 bg-gray-50 rounded border flex justify-between">
-                  <span className="text-gray-600">Wet (water)</span>
-                  <span className="font-mono font-bold">{wetValue}</span>
+                <div className="p-3 rounded-xl bg-canvas-100 border border-surface-border flex justify-between items-center">
+                  <span className="text-sm text-text-muted">Wet (water)</span>
+                  <span className="font-mono font-bold text-text">{wetValue}</span>
                 </div>
               </div>
               {dryValue !== null && wetValue !== null && dryValue === wetValue && (
-                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+                <div className="mb-4 p-3 rounded-xl bg-soil-glow border border-soil/15 text-sm text-soil">
                   Dry and wet values are the same. Calibration won't produce meaningful results.
                 </div>
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button
                   onClick={() => { setStep('dry'); setDryValue(null); setWetValue(null); }}
-                  className="flex-1 border border-gray-300 py-2 px-4 rounded hover:bg-gray-50"
+                  className="btn-secondary flex-1 justify-center"
                 >
                   Start Over
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 disabled:opacity-50"
+                  className="btn-primary flex-1 justify-center"
                 >
-                  {saving ? 'Saving...' : 'Save Calibration'}
+                  {saving ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </div>
           )}
 
           <Dialog.Close asChild>
-            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl leading-none" aria-label="Close">
+            <button className="absolute top-4 right-4 text-text-muted hover:text-text text-lg leading-none
+                             w-7 h-7 flex items-center justify-center rounded-lg hover:bg-canvas-200 transition-colors"
+                    aria-label="Close">
               &times;
             </button>
           </Dialog.Close>

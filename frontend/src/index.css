@@ -2,4 +2,148 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles can go here */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.15) transparent;
+  }
+
+  ::selection {
+    background: rgba(52, 211, 153, 0.3);
+    color: #e8edf3;
+  }
+
+  body {
+    background: #0c1117;
+    min-height: 100vh;
+  }
+
+  /* Topographic contour background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image:
+      repeating-radial-gradient(
+        ellipse at 20% 50%,
+        transparent 0,
+        transparent 28px,
+        rgba(52, 211, 153, 0.5) 28px,
+        rgba(52, 211, 153, 0.5) 29px
+      ),
+      repeating-radial-gradient(
+        ellipse at 80% 30%,
+        transparent 0,
+        transparent 36px,
+        rgba(52, 211, 153, 0.4) 36px,
+        rgba(52, 211, 153, 0.4) 37px
+      ),
+      repeating-radial-gradient(
+        ellipse at 50% 80%,
+        transparent 0,
+        transparent 22px,
+        rgba(52, 211, 153, 0.3) 22px,
+        rgba(52, 211, 153, 0.3) 23px
+      );
+  }
+}
+
+@layer components {
+  /* Card surfaces */
+  .card {
+    @apply bg-surface rounded-2xl border border-surface-border
+           shadow-card transition-all duration-200;
+  }
+  .card:hover {
+    @apply border-surface-border-hover shadow-card-hover;
+  }
+
+  /* Page headings — serif display font */
+  .page-title {
+    @apply font-display text-3xl text-text tracking-tight;
+  }
+
+  /* Section headings */
+  .section-title {
+    @apply font-body text-lg font-semibold text-text;
+  }
+
+  /* Mono data readout */
+  .data-value {
+    @apply font-mono text-accent tabular-nums;
+  }
+
+  /* Status dot with pulse */
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+  .status-dot--online {
+    @apply bg-accent shadow-[0_0_8px_rgba(52,211,153,0.5)];
+    animation: statusPulse 2.5s ease-in-out infinite;
+  }
+  .status-dot--offline {
+    @apply bg-text-muted;
+  }
+  .status-dot--provisioning {
+    @apply bg-soil;
+    animation: statusPulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes statusPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl
+           font-body font-medium text-sm transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-accent/40 focus:ring-offset-2
+           focus:ring-offset-canvas disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-canvas hover:bg-accent-dim active:scale-[0.97];
+  }
+  .btn-secondary {
+    @apply btn bg-canvas-200 text-text-secondary border border-surface-border
+           hover:bg-canvas-300 hover:text-text active:scale-[0.97];
+  }
+  .btn-danger {
+    @apply btn bg-danger-glow text-danger border border-danger/20
+           hover:bg-danger/20 active:scale-[0.97];
+  }
+  .btn-ghost {
+    @apply btn text-text-secondary hover:text-text hover:bg-canvas-200;
+  }
+
+  /* Form inputs */
+  .input {
+    @apply w-full bg-canvas-100 border border-surface-border rounded-xl
+           px-3 py-2.5 text-sm text-text font-body placeholder-text-muted
+           transition-colors duration-150
+           focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30;
+  }
+  select.input {
+    @apply appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%238899a6%22%20d%3D%22M6%208L1%203h10z%22%2F%3E%3C%2Fsvg%3E')]
+           bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-9;
+  }
+
+  /* Badge / tag */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium font-mono;
+  }
+
+  /* Moisture bar */
+  .moisture-bar {
+    @apply relative h-2 rounded-full overflow-hidden bg-canvas-200;
+  }
+  .moisture-bar-fill {
+    @apply absolute inset-y-0 left-0 rounded-full transition-all duration-500;
+    background: linear-gradient(90deg, #d97706 0%, #10b981 40%, #34d399 100%);
+  }
+}

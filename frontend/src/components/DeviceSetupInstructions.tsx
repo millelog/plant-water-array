@@ -2,31 +2,42 @@ import React from 'react';
 
 const DeviceSetupInstructions: React.FC = () => {
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md mb-4">
-      <h2 className="text-2xl font-bold mb-4">How to Set Up a New Device</h2>
+    <div className="card p-6">
+      <div className="section-title mb-5">How to Set Up a New Device</div>
 
-      <h3 className="text-lg font-semibold mt-4 mb-2">Initial Setup</h3>
-      <ol className="list-decimal list-inside space-y-2">
-        <li>Flash the firmware to your ESP32 via USB (one-time only).</li>
-        <li>Power on the device.</li>
-        <li>On your phone or computer, find the WiFi network <strong>PlantSensor_XXXX</strong> (the last 4 characters are unique to each device).</li>
-        <li>Connect with password <strong>plantsetup</strong>.</li>
-        <li>A setup page should open automatically. If not, open a browser and go to <strong>http://192.168.4.1</strong>.</li>
-        <li>Select your WiFi network from the dropdown.</li>
-        <li>Enter your WiFi password.</li>
-        <li>Confirm or edit the server URL.</li>
-        <li>Name your device.</li>
-        <li>Click <strong>Save & Connect</strong>.</li>
-        <li>The device reboots, connects to your WiFi, and appears in the list within ~1 minute.</li>
-      </ol>
+      <div className="space-y-3 mb-6">
+        {[
+          'Flash the firmware to your ESP32 via USB (one-time only).',
+          'Power on the device.',
+          <>On your phone or computer, find the WiFi network <span className="data-value">PlantSensor_XXXX</span> (last 4 characters are unique).</>,
+          <>Connect with password <span className="data-value">plantsetup</span>.</>,
+          <>A setup page should open automatically. If not, go to <span className="data-value">192.168.4.1</span>.</>,
+          'Select your WiFi network from the dropdown.',
+          'Enter your WiFi password.',
+          'Confirm or edit the server URL.',
+          'Name your device.',
+          <>Click <strong className="text-text">Save & Connect</strong>.</>,
+          'The device reboots, connects to WiFi, and appears in the list within ~1 minute.',
+        ].map((text, i) => (
+          <div key={i} className="flex gap-3 items-start">
+            <span className="w-6 h-6 rounded-lg bg-canvas-200 border border-surface-border flex items-center justify-center
+                           text-xs font-mono text-text-muted flex-shrink-0 mt-0.5">
+              {i + 1}
+            </span>
+            <span className="text-sm text-text-secondary leading-relaxed">{text}</span>
+          </div>
+        ))}
+      </div>
 
-      <h3 className="text-lg font-semibold mt-6 mb-2">Troubleshooting</h3>
-      <ul className="list-disc list-inside space-y-2 text-gray-700">
-        <li><strong>Device not appearing?</strong> Double-check your WiFi credentials and that the server is reachable from the device's network.</li>
-        <li><strong>Need to re-provision a device?</strong> Hold the <strong>BOOT</strong> button for 5 seconds during startup. This clears the configuration and re-enters setup mode.</li>
-        <li><strong>Setting up multiple devices?</strong> Each device broadcasts a unique AP name based on its MAC address (PlantSensor_XXXX).</li>
-        <li><strong>Future firmware updates</strong> are delivered automatically over-the-air (OTA) — no USB needed after initial flash.</li>
-      </ul>
+      <div className="border-t border-surface-border pt-5">
+        <div className="text-xs font-mono text-text-muted uppercase tracking-wider mb-3">Troubleshooting</div>
+        <div className="space-y-2 text-sm text-text-secondary">
+          <p><strong className="text-text">Device not appearing?</strong> Check WiFi credentials and that the server is reachable.</p>
+          <p><strong className="text-text">Re-provision?</strong> Hold the BOOT button for 5 seconds during startup to clear config.</p>
+          <p><strong className="text-text">Multiple devices?</strong> Each broadcasts a unique AP name based on MAC address.</p>
+          <p><strong className="text-text">Firmware updates</strong> are delivered OTA after initial flash &mdash; no USB needed.</p>
+        </div>
+      </div>
     </div>
   );
 };
