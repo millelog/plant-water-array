@@ -151,3 +151,28 @@ export interface WateringLogCreate {
   notes?: string;
   method?: string;
 }
+
+export interface AggregatedReadingPoint {
+  period_start: string;
+  avg_moisture: number;
+  min_moisture: number;
+  max_moisture: number;
+  reading_count: number;
+}
+
+export interface AggregatedReadingsResponse {
+  sensor_id: number;
+  period: string;
+  data: AggregatedReadingPoint[];
+}
+
+export interface DryingRateResponse {
+  sensor_id: number;
+  rate_per_hour: number | null;
+  rate_per_day: number | null;
+  estimated_days_until_dry: number | null;
+  dry_threshold: number;
+  current_moisture: number | null;
+  data_points_used: number;
+  period_days: number;
+}

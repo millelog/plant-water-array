@@ -629,3 +629,121 @@ def delete_watering_log(db: Session, log_id: int) -> bool:
     db.delete(log)
     db.commit()
     return True
+
+
+# Aggregated readings
+
+def get_aggregated_readings(db: Session, sensor_db_id: int, period: str, start_time: datetime = None, end_time: datetime = None):
+    if period == "daily":
+        fmt = '%Y-%m-%d'
+    else:
+        fmt = '%Y-W%W'
+
+    query = db.query(
+        func.strftime(fmt, models.Reading.timestamp).label('period_start'),
+        func.avg(models.Reading.moisture).label('avg_moisture'),
+        func.min(models.Reading.moisture).label('min_moisture'),
+        func.max(models.Reading.moisture).label('max_moisture'),
+        func.count(models.Reading.id).label('reading_count'),
+    ).filter(models.Reading.sensor_id == sensor_db_id)
+
+    if start_time:
+        query = query.filter(models.Reading.timestamp >= start_time)
+    if end_time:
+        query = query.filter(models.Reading.timestamp <= end_time)
+
+    query = query.group_by(func.strftime(fmt, models.Reading.timestamp)).order_by('period_start')
+    return query.all()
+
+
+# Drying rate
+
+def get_drying_rate(db: Session, sensor_db_id: int, period_days: int = 7):
+    now = datetime.now(timezone.utc)
+    start_time = now - timedelta(days=period_days)
+
+    # Current moisture
+    latest = db.query(models.Reading).filter(
+        models.Reading.sensor_id == sensor_db_id
+    ).order_by(models.Reading.timestamp.desc()).first()
+    current_moisture = latest.moisture if latest else None
+
+    # Dry threshold from sensor's threshold
+    threshold = db.query(models.Threshold).filter(models.Threshold.sensor_id == sensor_db_id).first()
+    dry_threshold = threshold.min_moisture if threshold and threshold.min_moisture is not None else 20.0
+
+    # Readings in period
+    readings = db.query(models.Reading).filter(
+        models.Reading.sensor_id == sensor_db_id,
+        models.Reading.timestamp >= start_time
+    ).order_by(models.Reading.timestamp.asc()).all()
+
+    # Watering logs in period for exclusion
+    watering_logs = db.query(models.WateringLog).filter(
+        models.WateringLog.sensor_id == sensor_db_id,
+        models.WateringLog.timestamp >= start_time
+    ).all()
+
+    # Exclude readings within 6 hours after each watering event
+    filtered_readings = []
+    for r in readings:
+        r_time = r.timestamp.replace(tzinfo=timezone.utc) if r.timestamp.tzinfo is None else r.timestamp
+        excluded = False
+        for log in watering_logs:
+            log_time = log.timestamp.replace(tzinfo=timezone.utc) if log.timestamp.tzinfo is None else log.timestamp
+            if timedelta(0) <= (r_time - log_time) <= timedelta(hours=6):
+                excluded = True
+                break
+        if not excluded:
+            filtered_readings.append(r)
+
+    if len(filtered_readings) < 2:
+        return {
+            "sensor_id": sensor_db_id,
+            "rate_per_hour": None,
+            "rate_per_day": None,
+            "estimated_days_until_dry": None,
+            "dry_threshold": dry_threshold,
+            "current_moisture": current_moisture,
+            "data_points_used": len(filtered_readings),
+            "period_days": period_days,
+        }
+
+    # Linear regression: hours_since_first vs moisture
+    first_time = filtered_readings[0].timestamp.replace(tzinfo=timezone.utc) if filtered_readings[0].timestamp.tzinfo is None else filtered_readings[0].timestamp
+    points = []
+    for r in filtered_readings:
+        r_time = r.timestamp.replace(tzinfo=timezone.utc) if r.timestamp.tzinfo is None else r.timestamp
+        hours = (r_time - first_time).total_seconds() / 3600.0
+        points.append((hours, r.moisture))
+
+    n = len(points)
+    sum_x = sum(p[0] for p in points)
+    sum_y = sum(p[1] for p in points)
+    sum_xy = sum(p[0] * p[1] for p in points)
+    sum_x2 = sum(p[0] ** 2 for p in points)
+
+    denom = n * sum_x2 - sum_x ** 2
+    if denom == 0:
+        slope = 0.0
+    else:
+        slope = (n * sum_xy - sum_x * sum_y) / denom
+
+    # Negative slope = drying, return as positive rate
+    rate_per_hour = abs(slope) if slope < 0 else 0.0
+    rate_per_day = rate_per_hour * 24.0
+
+    estimated_days = None
+    if rate_per_day > 0 and current_moisture is not None and current_moisture > dry_threshold:
+        estimated_days = (current_moisture - dry_threshold) / rate_per_day
+
+    return {
+        "sensor_id": sensor_db_id,
+        "rate_per_hour": round(rate_per_hour, 4),
+        "rate_per_day": round(rate_per_day, 3),
+        "estimated_days_until_dry": round(estimated_days, 1) if estimated_days is not None else None,
+        "dry_threshold": dry_threshold,
+        "current_moisture": current_moisture,
+        "data_points_used": n,
+        "period_days": period_days,
+    }

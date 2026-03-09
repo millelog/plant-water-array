@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate } from '../types';
+import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate, AggregatedReadingsResponse, DryingRateResponse } from '../types';
 
 const API_URL = 'http://localhost:8000';
 
@@ -168,6 +168,35 @@ export const deleteWateringLog = async (logId: number): Promise<void> => {
 export const testNotification = async (): Promise<{ detail: string }> => {
   const response = await axios.post(`${API_URL}/config/test-notification`);
   return response.data;
+};
+
+// Aggregated readings & drying rate
+
+export const getAggregatedReadings = async (sensorId: number, period: string, startTime?: string, endTime?: string): Promise<AggregatedReadingsResponse> => {
+  const response = await axios.get(`${API_URL}/readings/sensor/${sensorId}/aggregated`, {
+    params: { period, start_time: startTime, end_time: endTime },
+  });
+  return response.data;
+};
+
+export const getDryingRate = async (sensorId: number): Promise<DryingRateResponse> => {
+  const response = await axios.get(`${API_URL}/readings/sensor/${sensorId}/drying-rate`);
+  return response.data;
+};
+
+export const exportReadingsCsv = async (sensorId: number, startTime?: string, endTime?: string): Promise<void> => {
+  const response = await axios.get(`${API_URL}/readings/export`, {
+    params: { sensor_id: sensorId, start: startTime, end: endTime },
+    responseType: 'blob',
+  });
+  const url = URL.createObjectURL(response.data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `sensor_${sensorId}_readings.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 // Readings cleanup

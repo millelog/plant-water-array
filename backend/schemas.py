@@ -272,3 +272,32 @@ class HeartbeatResponse(BaseModel):
     reading_interval: int
     ota_check_interval: int
     sensors: List[HeartbeatSensorConfig] = []
+
+
+# Aggregated readings schemas
+
+class AggregatedReadingPoint(BaseModel):
+    period_start: str
+    avg_moisture: float
+    min_moisture: float
+    max_moisture: float
+    reading_count: int
+
+
+class AggregatedReadingsResponse(BaseModel):
+    sensor_id: int
+    period: str
+    data: list[AggregatedReadingPoint]
+
+
+# Drying rate schema
+
+class DryingRateResponse(BaseModel):
+    sensor_id: int
+    rate_per_hour: Optional[float] = None
+    rate_per_day: Optional[float] = None
+    estimated_days_until_dry: Optional[float] = None
+    dry_threshold: float
+    current_moisture: Optional[float] = None
+    data_points_used: int
+    period_days: int

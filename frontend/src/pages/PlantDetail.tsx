@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Sensor, Reading, Alert, Zone, Threshold, WateringLog as WateringLogType } from '../types';
+import { Sensor, Reading, Alert, Zone, Threshold, WateringLog as WateringLogType, AggregatedReadingPoint } from '../types';
 import {
   getSensorDetail,
   getReadings,
@@ -12,12 +12,14 @@ import {
   getZones,
   getWateringLogs,
   deleteWateringLog,
+  getAggregatedReadings,
 } from '../api/api';
 import InlineEdit from '../components/InlineEdit';
 import SensorReadingsGraph from '../components/SensorReadingsGraph';
 import AlertCard from '../components/AlertCard';
 import LogWateringModal from '../components/LogWateringModal';
 import WateringTimeline from '../components/WateringTimeline';
+import PlantInsights from '../components/PlantInsights';
 
 type TimeRange = '24h' | '7d' | '30d';
 
@@ -34,6 +36,7 @@ const PlantDetail: React.FC = () => {
   const [showInfo, setShowInfo] = useState(false);
   const [wateringLogs, setWateringLogs] = useState<WateringLogType[]>([]);
   const [showWateringModal, setShowWateringModal] = useState(false);
+  const [aggregatedData, setAggregatedData] = useState<AggregatedReadingPoint[] | null>(null);
   const [plantNotes, setPlantNotes] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState('');
@@ -62,14 +65,21 @@ const PlantDetail: React.FC = () => {
 
   const loadReadings = useCallback(async () => {
     if (!sensor) return;
-    const limitMap: Record<TimeRange, number> = { '24h': 288, '7d': 2016, '30d': 8640 };
+    setAggregatedData(null);
     try {
+      if (timeRange === '30d') {
+        const res = await getAggregatedReadings(sensorId, 'daily');
+        setAggregatedData(res.data);
+        setReadings([]);
+        return;
+      }
+      const limitMap: Record<string, number> = { '24h': 288, '7d': 2016 };
       const r = await getReadings(sensor.device_id, sensor.sensor_id, limitMap[timeRange]);
       setReadings(r);
     } catch (error) {
       console.error('Error loading readings:', error);
     }
-  }, [sensor, timeRange]);
+  }, [sensor, sensorId, timeRange]);
 
   const loadAlerts = useCallback(async () => {
     if (!sensorDbId) return;
@@ -227,6 +237,9 @@ const PlantDetail: React.FC = () => {
         )}
       </div>
 
+      {/* Plant Insights */}
+      <PlantInsights sensorId={sensorId} />
+
       {/* Threshold Settings */}
       <div className="card p-6">
         <div className="section-title mb-4">Threshold Settings</div>
@@ -279,7 +292,9 @@ const PlantDetail: React.FC = () => {
             ))}
           </div>
         </div>
-        {readings.length > 0 ? (
+        {aggregatedData && aggregatedData.length > 0 ? (
+          <SensorReadingsGraph aggregatedData={aggregatedData} />
+        ) : readings.length > 0 ? (
           <SensorReadingsGraph readings={readings} />
         ) : (
           <div className="text-sm text-text-muted italic py-8 text-center">No readings for this period</div>
