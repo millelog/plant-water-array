@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Erase and flash MicroPython firmware to a connected ESP32, then upload source files."""
 
+import argparse
 import glob
 import os
 import platform
@@ -44,28 +45,37 @@ def run(cmd, **kwargs):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Flash MicroPython firmware and upload source files to ESP32.")
+    parser.add_argument("--sync-only", action="store_true",
+                        help="Skip erase/flash and only upload source files")
+    args = parser.parse_args()
+
     port = find_serial_port()
     if not port:
         print("ERROR: No serial port found. Is the ESP32 plugged in?")
         sys.exit(1)
     print(f"Found ESP32 on {port}")
 
-    if not os.path.isfile(FIRMWARE_PATH):
-        print(f"ERROR: Firmware file not found at {FIRMWARE_PATH}")
-        print("Run this script from the repository root.")
-        sys.exit(1)
+    if args.sync_only:
+        print("\n[sync-only] Uploading source files...")
+    else:
+        if not os.path.isfile(FIRMWARE_PATH):
+            print(f"ERROR: Firmware file not found at {FIRMWARE_PATH}")
+            print("Run this script from the repository root.")
+            sys.exit(1)
 
-    # Erase flash
-    print("\n[1/3] Erasing flash...")
-    run([sys.executable, "-m", "esptool", "--chip", "esp32", "--port", port, "erase_flash"])
+        # Erase flash
+        print("\n[1/3] Erasing flash...")
+        run([sys.executable, "-m", "esptool", "--chip", "esp32", "--port", port, "erase_flash"])
 
-    # Write firmware
-    print("\n[2/3] Flashing MicroPython firmware...")
-    run([sys.executable, "-m", "esptool", "--chip", "esp32", "--port", port,
-         "write_flash", "-z", "0x1000", FIRMWARE_PATH])
+        # Write firmware
+        print("\n[2/3] Flashing MicroPython firmware...")
+        run([sys.executable, "-m", "esptool", "--chip", "esp32", "--port", port,
+             "write_flash", "-z", "0x1000", FIRMWARE_PATH])
+
+        print("\n[3/3] Uploading source files...")
 
     # Upload source files
-    print("\n[3/3] Uploading source files...")
     for filename in SOURCE_FILES:
         src = os.path.join(SOURCE_DIR, filename)
         if not os.path.isfile(src):
