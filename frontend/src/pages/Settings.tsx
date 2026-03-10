@@ -5,17 +5,6 @@ import { useAuth } from '../context/AuthContext';
 
 const Settings: React.FC = () => {
   const { isDemo } = useAuth();
-
-  if (isDemo) {
-    return (
-      <div className="max-w-2xl animate-fade-in">
-        <div className="card p-8 text-center">
-          <div className="text-text font-medium mb-2">Settings Unavailable</div>
-          <p className="text-sm text-text-muted">Settings are not available in demo mode.</p>
-        </div>
-      </div>
-    );
-  }
   const [zones, setZones] = useState<Zone[]>([]);
   const [newZoneName, setNewZoneName] = useState('');
   const [editingZoneId, setEditingZoneId] = useState<number | null>(null);
@@ -277,6 +266,13 @@ const Settings: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-2xl">
+      {isDemo && (
+        <div className="card p-4 border-soil/20 bg-soil-glow flex items-center gap-3">
+          <span className="text-soil text-sm font-medium">Demo Mode</span>
+          <span className="text-text-muted text-sm">Settings are read-only in demo mode.</span>
+        </div>
+      )}
+      <div className={isDemo ? 'space-y-6 pointer-events-none opacity-60 select-none' : 'space-y-6'}>
       {/* Zones Management */}
       <div className="card p-5">
         <div className="section-title mb-4">Zones</div>
@@ -642,6 +638,7 @@ const Settings: React.FC = () => {
           <p>Plant Water Array is a distributed plant moisture monitoring system using ESP32 sensors, a Python backend, and a React frontend.</p>
           <p className="text-text-muted font-mono text-xs mt-3">Version 1.0.0</p>
         </div>
+      </div>
       </div>
     </div>
   );

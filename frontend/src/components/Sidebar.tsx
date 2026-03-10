@@ -95,15 +95,11 @@ const Sidebar: React.FC = () => {
       <nav className="flex-1 py-4 px-3 space-y-0.5">
         {primaryItems.map(renderItem)}
 
-        {!isDemo && (
-          <>
-            {/* Admin divider */}
-            <div className="pt-4 pb-2 px-3">
-              <div className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Admin</div>
-            </div>
-            {adminItems.map(renderItem)}
-          </>
-        )}
+        {/* Admin divider */}
+        <div className="pt-4 pb-2 px-3">
+          <div className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Admin</div>
+        </div>
+        {adminItems.map(renderItem)}
       </nav>
 
       {/* Footer */}
