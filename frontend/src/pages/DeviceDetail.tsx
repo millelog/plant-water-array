@@ -201,10 +201,10 @@ const DeviceDetail: React.FC = () => {
         value ? <span className="data-value text-sm">{value}</span> : <span className="text-text-muted">--</span>,
     },
     {
-      Header: 'Firmware',
+      Header: 'Version',
       accessor: 'firmware_version',
       Cell: ({ value }: { value: string | null }) =>
-        value ? <span className="badge bg-canvas-200 text-text-muted border border-surface-border">v{value}</span> : <span className="text-text-muted">--</span>,
+        value ? <span className="badge bg-canvas-200 text-text-muted border border-surface-border font-mono">{value}</span> : <span className="text-text-muted">--</span>,
     },
   ];
 
@@ -248,9 +248,9 @@ const DeviceDetail: React.FC = () => {
             <span className="data-value font-mono text-xs">{device.mac_address || '--'}</span>
           </div>
           <div>
-            <div className="text-text-muted text-xs mb-1">Firmware</div>
+            <div className="text-text-muted text-xs mb-1">Deploy Version</div>
             {device.firmware_version
-              ? <span className="badge bg-canvas-200 text-text-muted border border-surface-border">v{device.firmware_version}</span>
+              ? <span className="badge bg-canvas-200 text-text-muted border border-surface-border font-mono">{device.firmware_version}</span>
               : <span className="text-text-muted">--</span>
             }
           </div>

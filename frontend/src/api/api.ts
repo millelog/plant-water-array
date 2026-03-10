@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, FirmwareInfo, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate, AggregatedReadingsResponse, DryingRateResponse, DatabaseStats, HeartbeatLogEntry, SensorHealthIndicator, CompareReadingsResponse } from '../types';
+import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, CalibrationData, LatestRawReading, Zone, DashboardSummary, SystemConfig, SystemConfigUpdate, WateringLog, WateringLogCreate, AggregatedReadingsResponse, DryingRateResponse, DatabaseStats, HeartbeatLogEntry, SensorHealthIndicator, CompareReadingsResponse } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -84,32 +84,6 @@ export const calibrateSensor = async (sensorId: number, data: CalibrationData): 
 export const getLatestRawReading = async (sensorId: number): Promise<LatestRawReading> => {
   const response = await axios.get(`${API_URL}/sensors/${sensorId}/latest-raw`);
   return response.data;
-};
-
-// Firmware API functions
-
-export const getFirmwareList = async (): Promise<FirmwareInfo[]> => {
-  const response = await axios.get(`${API_URL}/firmware/`);
-  return response.data;
-};
-
-export const uploadFirmware = async (version: string, notes: string, files: File[]): Promise<FirmwareInfo> => {
-  const formData = new FormData();
-  formData.append('version', version);
-  if (notes) {
-    formData.append('notes', notes);
-  }
-  files.forEach((file) => {
-    formData.append('files', file);
-  });
-  const response = await axios.post(`${API_URL}/firmware/upload`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
-  return response.data;
-};
-
-export const deleteFirmware = async (version: string): Promise<void> => {
-  await axios.delete(`${API_URL}/firmware/${version}`);
 };
 
 // Zone API functions

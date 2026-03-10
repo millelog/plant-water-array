@@ -13,7 +13,7 @@ import logging
 def get_system_config(db: Session):
     config = db.query(models.SystemConfig).first()
     if not config:
-        config = models.SystemConfig(reading_interval=10, device_timeout=5, ota_check_interval=300, ntfy_enabled=False, ntfy_server_url="https://ntfy.sh")
+        config = models.SystemConfig(reading_interval=10, device_timeout=5, ntfy_enabled=False, ntfy_server_url="https://ntfy.sh")
         db.add(config)
         db.commit()
         db.refresh(config)
@@ -57,7 +57,6 @@ def build_heartbeat_config(db: Session, device_id: str):
         "name": device.name,
         "firmware_version": device.firmware_version,
         "reading_interval": sys_config.reading_interval,
-        "ota_check_interval": sys_config.ota_check_interval,
         "sensors": sensor_configs,
     }
 
@@ -375,41 +374,6 @@ def check_and_notify_offline_devices(db: Session):
             db.commit()
     except Exception as e:
         logging.error(f"Failed to check/notify offline devices: {e}")
-
-
-def get_latest_firmware(db: Session):
-    return db.query(models.Firmware).order_by(models.Firmware.upload_timestamp.desc()).first()
-
-
-def get_firmware_by_version(db: Session, version: str):
-    return db.query(models.Firmware).filter(models.Firmware.version == version).first()
-
-
-def get_all_firmware(db: Session):
-    return db.query(models.Firmware).order_by(models.Firmware.upload_timestamp.desc()).all()
-
-
-def create_firmware(db: Session, version: str, filename: str, checksum: str, size_bytes: int, notes: str = None):
-    db_firmware = models.Firmware(
-        version=version,
-        filename=filename,
-        checksum=checksum,
-        size_bytes=size_bytes,
-        notes=notes
-    )
-    db.add(db_firmware)
-    db.commit()
-    db.refresh(db_firmware)
-    return db_firmware
-
-
-def delete_firmware(db: Session, version: str):
-    db_firmware = get_firmware_by_version(db, version)
-    if db_firmware:
-        db.delete(db_firmware)
-        db.commit()
-        return True
-    return False
 
 
 # Zone CRUD

@@ -23,8 +23,8 @@ const Settings: React.FC = () => {
 
   // System config state
   const [config, setConfig] = useState<SystemConfig | null>(null);
-  const [configDraft, setConfigDraft] = useState<{ reading_interval: string; device_timeout: string; ota_check_interval: string; moisture_jump_threshold: string }>({
-    reading_interval: '', device_timeout: '', ota_check_interval: '', moisture_jump_threshold: ''
+  const [configDraft, setConfigDraft] = useState<{ reading_interval: string; device_timeout: string; moisture_jump_threshold: string }>({
+    reading_interval: '', device_timeout: '', moisture_jump_threshold: ''
   });
   const [configSaving, setConfigSaving] = useState(false);
   const [configMsg, setConfigMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -58,7 +58,6 @@ const Settings: React.FC = () => {
       setConfigDraft({
         reading_interval: String(c.reading_interval),
         device_timeout: String(c.device_timeout),
-        ota_check_interval: String(c.ota_check_interval),
         moisture_jump_threshold: String(c.moisture_jump_threshold),
       });
       setNtfyDraft({
@@ -79,28 +78,24 @@ const Settings: React.FC = () => {
   const configDirty = config !== null && (
     String(config.reading_interval) !== configDraft.reading_interval ||
     String(config.device_timeout) !== configDraft.device_timeout ||
-    String(config.ota_check_interval) !== configDraft.ota_check_interval ||
     String(config.moisture_jump_threshold) !== configDraft.moisture_jump_threshold
   );
 
   const handleSaveConfig = async () => {
     const ri = parseInt(configDraft.reading_interval);
     const dt = parseInt(configDraft.device_timeout);
-    const oci = parseInt(configDraft.ota_check_interval);
     if (isNaN(ri) || ri < 5 || ri > 3600) { setConfigMsg({ type: 'error', text: 'Reading interval must be 5-3600 seconds' }); return; }
     if (isNaN(dt) || dt < 1 || dt > 60) { setConfigMsg({ type: 'error', text: 'Device timeout must be 1-60 minutes' }); return; }
-    if (isNaN(oci) || oci < 60 || oci > 86400) { setConfigMsg({ type: 'error', text: 'OTA check interval must be 60-86400 seconds' }); return; }
     const mjt = parseFloat(configDraft.moisture_jump_threshold);
     if (isNaN(mjt) || mjt < 5 || mjt > 50) { setConfigMsg({ type: 'error', text: 'Moisture jump threshold must be 5-50%' }); return; }
     setConfigSaving(true);
     setConfigMsg(null);
     try {
-      const updated = await updateSystemConfig({ reading_interval: ri, device_timeout: dt, ota_check_interval: oci, moisture_jump_threshold: mjt });
+      const updated = await updateSystemConfig({ reading_interval: ri, device_timeout: dt, moisture_jump_threshold: mjt });
       setConfig(updated);
       setConfigDraft({
         reading_interval: String(updated.reading_interval),
         device_timeout: String(updated.device_timeout),
-        ota_check_interval: String(updated.ota_check_interval),
         moisture_jump_threshold: String(updated.moisture_jump_threshold),
       });
       setConfigMsg({ type: 'success', text: 'Configuration saved' });
@@ -349,19 +344,6 @@ const Settings: React.FC = () => {
                 onChange={(e) => { setConfigDraft({ ...configDraft, device_timeout: e.target.value }); setConfigMsg(null); }}
                 className="input !w-24 text-right"
                 min="1" max="60"
-              />
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-surface-border">
-              <div>
-                <div className="text-sm text-text font-medium">OTA Check Interval</div>
-                <div className="text-xs text-text-muted mt-0.5">How often devices check for firmware updates (seconds)</div>
-              </div>
-              <input
-                type="number"
-                value={configDraft.ota_check_interval}
-                onChange={(e) => { setConfigDraft({ ...configDraft, ota_check_interval: e.target.value }); setConfigMsg(null); }}
-                className="input !w-24 text-right"
-                min="60" max="86400"
               />
             </div>
             <div className="flex items-center justify-between py-3">

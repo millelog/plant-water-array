@@ -14,7 +14,6 @@ const pageTitles: Record<string, string> = {
   '/sensors': 'Sensors',
   '/readings': 'Readings',
   '/alerts': 'Alerts',
-  '/firmware': 'Firmware',
   '/settings': 'Settings',
   '/plant': 'Plant Detail',
 };

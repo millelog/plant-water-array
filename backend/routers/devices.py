@@ -32,6 +32,8 @@ async def register_device(device: schemas.DeviceRegister, db: Session = Depends(
                 existing_device.ip_address = device.ip_address
             if device.mac_address is not None:
                 existing_device.mac_address = device.mac_address
+            if device.deploy_token is not None:
+                existing_device.deploy_token = device.deploy_token
             db.commit()
             db.refresh(existing_device)
             return existing_device
@@ -52,6 +54,8 @@ async def register_device(device: schemas.DeviceRegister, db: Session = Depends(
         new_device.ip_address = device.ip_address
     if device.mac_address is not None:
         new_device.mac_address = device.mac_address
+    if device.deploy_token is not None:
+        new_device.deploy_token = device.deploy_token
     db.commit()
     db.refresh(new_device)
     return new_device
@@ -106,19 +110,3 @@ async def device_heartbeat(device_id: str, heartbeat: schemas.DeviceHeartbeat, d
     return config
 
 
-@router.get("/{device_id}/firmware/check", response_model=schemas.FirmwareCheckResponse)
-async def check_firmware(device_id: str, current_version: str = None, db: Session = Depends(get_db)):
-    device = crud.get_device_by_device_id(db, device_id)
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-
-    latest = crud.get_latest_firmware(db)
-    if not latest or (current_version and latest.version == current_version):
-        return schemas.FirmwareCheckResponse(update_available=False)
-
-    return schemas.FirmwareCheckResponse(
-        update_available=True,
-        version=latest.version,
-        download_url=f"/firmware/{latest.version}/manifest",
-        checksum=latest.checksum
-    )

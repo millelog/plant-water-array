@@ -124,9 +124,6 @@ embeded-src/config.py
 # TypeScript build info
 *.tsbuildinfo
 
-# Firmware storage
-backend/firmware_storage/
-
 # KiCad
 pcb/fp-info-cache
 pcb/*.lck

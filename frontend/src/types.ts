@@ -65,16 +65,6 @@ export interface LatestRawReading {
   timestamp: string;
 }
 
-export interface FirmwareInfo {
-  id: number;
-  version: string;
-  filename: string;
-  upload_timestamp: string;
-  checksum: string;
-  size_bytes: number;
-  notes?: string;
-}
-
 export interface Zone {
   id: number;
   name: string;
@@ -121,7 +111,6 @@ export interface SystemConfig {
   id: number;
   reading_interval: number;
   device_timeout: number;
-  ota_check_interval: number;
   moisture_jump_threshold: number;
   ntfy_enabled: boolean;
   ntfy_server_url: string;
@@ -134,7 +123,6 @@ export interface SystemConfig {
 export interface SystemConfigUpdate {
   reading_interval?: number;
   device_timeout?: number;
-  ota_check_interval?: number;
   moisture_jump_threshold?: number;
   ntfy_enabled?: boolean;
   ntfy_server_url?: string;

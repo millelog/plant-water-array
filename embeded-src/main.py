@@ -1,7 +1,6 @@
 import network  # type: ignore
 import ubinascii  # type: ignore
 import urequests  # type: ignore
-import uhashlib  # type: ignore
 import machine  # type: ignore
 import time
 import random
@@ -13,9 +12,10 @@ sta_if = network.WLAN(network.STA_IF)
 # Server-synced config cache (updated via heartbeat responses)
 server_config = {
     "reading_interval": None,
-    "ota_check_interval": None,
     "sensors": {},  # sensor_id -> {name, calibration_dry, calibration_wet, threshold_min, threshold_max}
 }
+
+HEARTBEAT_INTERVAL = 300  # seconds
 
 
 def get_mac():
@@ -26,6 +26,14 @@ def get_ip():
     if sta_if.isconnected():
         return sta_if.ifconfig()[0]
     return None
+
+
+def get_firmware_version():
+    try:
+        from _version import GIT_COMMIT
+        return GIT_COMMIT
+    except ImportError:
+        return "unknown"
 
 
 def is_configured():
@@ -132,9 +140,10 @@ def register_with_server():
     data = {
         "name": config.DEVICE_NAME,
         "device_id": mac,
-        "firmware_version": config.FIRMWARE_VERSION,
+        "firmware_version": get_firmware_version(),
         "ip_address": ip,
-        "mac_address": mac
+        "mac_address": mac,
+        "deploy_token": getattr(config, 'DEPLOY_TOKEN', None),
     }
     try:
         response = http_request("POST", config.SERVER_URL + "/devices/register_device", json=data)
@@ -242,7 +251,7 @@ def send_moisture_reading(device_id, sensor_id, moisture, raw_adc=None):
 def send_heartbeat(device_id):
     import config
     data = {
-        "firmware_version": config.FIRMWARE_VERSION,
+        "firmware_version": get_firmware_version(),
         "ip_address": get_ip(),
         "mac_address": get_mac()
     }
@@ -270,9 +279,6 @@ def apply_server_config(heartbeat_data, registered_sensors):
     if "reading_interval" in heartbeat_data:
         server_config["reading_interval"] = heartbeat_data["reading_interval"]
         print(f"Config sync: reading_interval={heartbeat_data['reading_interval']}s")
-    if "ota_check_interval" in heartbeat_data:
-        server_config["ota_check_interval"] = heartbeat_data["ota_check_interval"]
-        print(f"Config sync: ota_check_interval={heartbeat_data['ota_check_interval']}s")
     for sc in heartbeat_data.get("sensors", []):
         sid = sc.get("sensor_id")
         if sid is not None:
@@ -296,164 +302,26 @@ def get_reading_interval():
     return getattr(config, 'READING_INTERVAL', 10)
 
 
-def get_ota_check_interval():
-    import config
-    if server_config["ota_check_interval"] is not None:
-        return server_config["ota_check_interval"]
-    return getattr(config, 'OTA_CHECK_INTERVAL', 300)
-
-
-def sha256_file(filepath):
-    h = uhashlib.sha256()
-    with open(filepath, "rb") as f:
-        while True:
-            chunk = f.read(512)
-            if not chunk:
-                break
-            h.update(chunk)
-    return ubinascii.hexlify(h.digest()).decode()
-
-
-def file_exists(path):
-    try:
-        os.stat(path)
-        return True
-    except OSError:
-        return False
-
-
-def check_and_apply_ota(device_id):
-    import config
-    try:
-        response = http_request("GET", config.SERVER_URL + f"/devices/{device_id}/firmware/check?current_version={config.FIRMWARE_VERSION}")
-        if response.status_code != 200:
-            response.close()
-            return
-        check_data = response.json()
-        response.close()
-
-        if not check_data.get("update_available"):
-            print("Firmware is up to date")
-            return
-
-        new_version = check_data["version"]
-        print(f"Update available: {new_version}")
-
-        # Get manifest
-        response = http_request("GET", config.SERVER_URL + f"/firmware/{new_version}/manifest")
-        if response.status_code != 200:
-            print("Failed to get manifest")
-            response.close()
-            return
-        manifest_data = response.json()
-        response.close()
-
-        files_to_update = []
-        for file_info in manifest_data.get("files", []):
-            filename = file_info["filename"]
-            # Never overwrite config.py via OTA
-            if filename == "config.py":
-                print(f"Skipping {filename} (protected)")
-                continue
-            files_to_update.append(file_info)
-
-        if not files_to_update:
-            print("No files to update")
-            return
-
-        # Download all files to temp location and verify checksums
-        downloaded = []
-        for file_info in files_to_update:
-            filename = file_info["filename"]
-            expected_checksum = file_info["checksum"]
-            temp_name = filename + ".new"
-
-            print(f"Downloading {filename}...")
-            try:
-                response = http_request("GET", config.SERVER_URL + f"/firmware/{new_version}/files/{filename}")
-                if response.status_code != 200:
-                    print(f"Failed to download {filename}")
-                    response.close()
-                    _cleanup_downloads(downloaded)
-                    return
-                content = response.content
-                response.close()
-
-                with open(temp_name, "wb") as f:
-                    f.write(content)
-
-                actual_checksum = sha256_file(temp_name)
-                if actual_checksum != expected_checksum:
-                    print(f"Checksum mismatch for {filename}: expected {expected_checksum}, got {actual_checksum}")
-                    _cleanup_downloads(downloaded + [temp_name])
-                    return
-
-                downloaded.append(temp_name)
-                print(f"Downloaded and verified {filename}")
-
-            except Exception as e:
-                print(f"Error downloading {filename}: {e}")
-                _cleanup_downloads(downloaded)
-                return
-
-        # All files downloaded and verified - apply update
-        print("All files verified. Applying update...")
-        backups = []
-        try:
-            # Backup existing files
-            for file_info in files_to_update:
-                filename = file_info["filename"]
-                if file_exists(filename):
-                    backup_name = filename + ".bak"
-                    os.rename(filename, backup_name)
-                    backups.append((filename, backup_name))
-
-            # Move new files into place
-            for file_info in files_to_update:
-                filename = file_info["filename"]
-                temp_name = filename + ".new"
-                os.rename(temp_name, filename)
-
-            print(f"OTA update to {new_version} complete. Rebooting...")
-            time.sleep(1)
-            machine.reset()
-
-        except Exception as e:
-            print(f"Error applying update: {e}")
-            # Restore backups
-            _restore_backups(backups)
-            _cleanup_downloads(downloaded)
-
-    except Exception as e:
-        print(f"OTA check failed: {e}")
-
-
-def _cleanup_downloads(temp_files):
-    for temp_name in temp_files:
-        try:
-            os.remove(temp_name)
-        except OSError:
-            pass
-
-
-def _restore_backups(backups):
-    print("Restoring backups...")
-    for original, backup in backups:
-        try:
-            if file_exists(original):
-                os.remove(original)
-            os.rename(backup, original)
-            print(f"Restored {original}")
-        except OSError as e:
-            print(f"Error restoring {original}: {e}")
-
-
 def main():
     import config
     connect_wifi()
     if not sta_if.isconnected():
         print("WiFi connection failed. Exiting.")
         return
+
+    # Start update server for push deploys
+    update_srv = None
+    try:
+        from update_server import UpdateServer
+        deploy_token = getattr(config, 'DEPLOY_TOKEN', None)
+        deploy_port = getattr(config, 'DEPLOY_PORT', 8266)
+        if deploy_token and deploy_token != "changeme":
+            update_srv = UpdateServer(deploy_token, deploy_port)
+            update_srv.start()
+        else:
+            print("WARNING: DEPLOY_TOKEN not set or is default, update server disabled")
+    except Exception as e:
+        print(f"Could not start update server: {e}")
 
     print("WiFi connected. Waiting 5 seconds before pinging server...")
     time.sleep(5)
@@ -507,9 +375,13 @@ def main():
     apply_server_config(heartbeat_data, registered_sensors)
 
     last_reading_time = 0
-    last_ota_check_time = time.time()  # just did heartbeat
+    last_heartbeat_time = time.time()
 
     while True:
+        # Check for incoming deploy requests (non-blocking)
+        if update_srv:
+            update_srv.check()
+
         if not ensure_wifi():
             time.sleep(5)
             continue
@@ -554,12 +426,11 @@ def main():
 
             last_reading_time = current_time
 
-        # Heartbeat + OTA check at dynamic interval
-        if current_time - last_ota_check_time >= get_ota_check_interval():
+        # Heartbeat at dedicated interval
+        if current_time - last_heartbeat_time >= HEARTBEAT_INTERVAL:
             hb_data = send_heartbeat(device_id)
             apply_server_config(hb_data, registered_sensors)
-            check_and_apply_ota(device_id)
-            last_ota_check_time = current_time
+            last_heartbeat_time = current_time
 
         time.sleep(1)
 

@@ -10,7 +10,7 @@ import sys
 
 FIRMWARE_PATH = os.path.join("firmware", "ESP32_GENERIC-20240602-v1.23.0.bin")
 SOURCE_DIR = "embeded-src"
-SOURCE_FILES = ["main.py", "captive_portal.py", "config.py", "display.py"]
+SOURCE_FILES = ["main.py", "captive_portal.py", "config.py", "display.py", "update_server.py"]
 
 
 def find_serial_port():

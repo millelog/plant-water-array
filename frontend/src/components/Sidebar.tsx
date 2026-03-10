@@ -6,7 +6,6 @@ import {
   BeakerIcon,
   BellIcon,
   CogIcon,
-  ArrowUpTrayIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { useAlerts } from '../context/AlertContext';
@@ -33,7 +32,6 @@ const Sidebar: React.FC = () => {
   const adminItems: MenuItem[] = [
     { name: 'Devices', icon: DevicePhoneMobileIcon, path: '/devices' },
     { name: 'Sensors', icon: BeakerIcon, path: '/sensors' },
-    { name: 'Firmware', icon: ArrowUpTrayIcon, path: '/firmware' },
     { name: 'Settings', icon: CogIcon, path: '/settings' },
   ];
 

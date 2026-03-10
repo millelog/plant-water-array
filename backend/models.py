@@ -24,6 +24,7 @@ class Device(Base):
     mac_address = Column(String, nullable=True)
     last_seen = Column(DateTime, nullable=True)
     offline_notified = Column(Boolean, default=False)
+    deploy_token = Column(String, nullable=True)
 
     sensors = relationship("Sensor", back_populates="device")
     heartbeat_logs = relationship("HeartbeatLog", back_populates="device")
@@ -115,7 +116,6 @@ class SystemConfig(Base):
     id = Column(Integer, primary_key=True, index=True)
     reading_interval = Column(Integer, default=10)       # seconds
     device_timeout = Column(Integer, default=5)           # minutes
-    ota_check_interval = Column(Integer, default=300)     # seconds
     moisture_jump_threshold = Column(Float, default=15.0)
     ntfy_enabled = Column(Boolean, default=False)
     ntfy_server_url = Column(String, default="https://ntfy.sh")
@@ -137,13 +137,3 @@ class WateringLog(Base):
     sensor = relationship("Sensor", back_populates="watering_logs")
 
 
-class Firmware(Base):
-    __tablename__ = "firmware"
-
-    id = Column(Integer, primary_key=True, index=True)
-    version = Column(String, unique=True, index=True)
-    filename = Column(String)
-    upload_timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    checksum = Column(String)  # SHA-256
-    size_bytes = Column(Integer)
-    notes = Column(String, nullable=True)

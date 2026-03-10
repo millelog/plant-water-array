@@ -35,7 +35,7 @@ const DeviceSetupInstructions: React.FC = () => {
           <p><strong className="text-text">Device not appearing?</strong> Check WiFi credentials and that the server is reachable.</p>
           <p><strong className="text-text">Re-provision?</strong> Hold the BOOT button for 5 seconds during startup to clear config.</p>
           <p><strong className="text-text">Multiple devices?</strong> Each broadcasts a unique AP name based on MAC address.</p>
-          <p><strong className="text-text">Firmware updates</strong> are delivered OTA after initial flash &mdash; no USB needed.</p>
+          <p><strong className="text-text">Deploy updates</strong> via <span className="data-value">python deploy.py</span> &mdash; pushes code to all devices over the LAN.</p>
         </div>
       </div>
     </div>

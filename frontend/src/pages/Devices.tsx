@@ -87,10 +87,10 @@ const Devices: React.FC = () => {
       },
     },
     {
-      Header: 'Firmware',
+      Header: 'Version',
       accessor: 'firmware_version',
       Cell: ({ value }: { value: string | undefined }) =>
-        value ? <span className="badge bg-canvas-200 text-text-muted border border-surface-border">v{value}</span> : <span className="text-text-muted">&mdash;</span>,
+        value ? <span className="badge bg-canvas-200 text-text-muted border border-surface-border font-mono">{value}</span> : <span className="text-text-muted">&mdash;</span>,
     },
     {
       Header: 'IP Address',

@@ -146,30 +146,35 @@ if(s.value==='__other__')m.required=true;else{m.required=false;m.value='';}
 </script></body></html>"""
 
 
-SUCCESS_PAGE = """<!DOCTYPE html>
+def success_page(deploy_token):
+    return """<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Setup Complete</title>
 <style>body{font-family:sans-serif;max-width:400px;margin:40px auto;padding:0 15px;text-align:center}
-h1{color:#2d5016}</style></head><body>
+h1{color:#2d5016}.token{font-family:monospace;background:#f0f0f0;padding:4px 8px;border-radius:4px;word-break:break-all}</style></head><body>
 <h1>Setup Complete!</h1>
 <p>Your device is restarting and will connect to your WiFi network.</p>
 <p>It should appear in your device list within a minute.</p>
+<p>Deploy token: <span class="token">""" + deploy_token + """</span></p>
 <p>You can close this page and disconnect from the setup network.</p>
 </body></html>"""
 
 
 def save_config(ssid, password, server_url, device_name):
+    import os
+    deploy_token = ubinascii.hexlify(os.urandom(16)).decode()
     with open("config.py", "w") as f:
         f.write('WIFI_SSID = "' + ssid + '"\n')
         f.write('WIFI_PASSWORD = "' + password + '"\n')
         f.write('SERVER_URL = "' + server_url + '"\n')
         f.write('DEVICE_NAME = "' + device_name + '"\n')
         f.write("READING_INTERVAL = 10\n")
-        f.write('FIRMWARE_VERSION = "1.0.0"\n')
-        f.write("OTA_CHECK_INTERVAL = 300\n")
+        f.write('DEPLOY_TOKEN = "' + deploy_token + '"\n')
+        f.write("DEPLOY_PORT = 8266\n")
         f.write("SENSOR_PINS = [34]\n")
         f.write("ADC_DRY = 0\n")
         f.write("ADC_WET = 1500\n")
+    return deploy_token
 
 
 def http_server(ip):
@@ -214,8 +219,8 @@ def handle_http(sock, setup_page):
             device_name = params.get("device_name", "PlantSensor")
 
             if ssid and ssid != "__other__":
-                save_config(ssid, password, server_url, device_name)
-                response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n" + SUCCESS_PAGE
+                deploy_token = save_config(ssid, password, server_url, device_name)
+                response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n" + success_page(deploy_token)
                 cl.send(response.encode())
                 cl.close()
                 return True  # Signal to reboot

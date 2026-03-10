@@ -96,6 +96,7 @@ class DeviceRegister(BaseModel):
     firmware_version: Optional[str] = None
     ip_address: Optional[str] = None
     mac_address: Optional[str] = None
+    deploy_token: Optional[str] = None
 
 
 class Device(BaseModel):
@@ -106,6 +107,7 @@ class Device(BaseModel):
     ip_address: Optional[str] = None
     mac_address: Optional[str] = None
     last_seen: Optional[datetime] = None
+    deploy_token: Optional[str] = None
     sensors: List[Sensor] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -132,25 +134,6 @@ class DeviceHeartbeat(BaseModel):
     firmware_version: Optional[str] = None
     ip_address: Optional[str] = None
     mac_address: Optional[str] = None
-
-
-class FirmwareCheckResponse(BaseModel):
-    update_available: bool
-    version: Optional[str] = None
-    download_url: Optional[str] = None
-    checksum: Optional[str] = None
-
-
-class FirmwareInfo(BaseModel):
-    id: int
-    version: str
-    filename: str
-    upload_timestamp: datetime
-    checksum: str
-    size_bytes: int
-    notes: Optional[str] = None
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 # Zone schemas
@@ -216,7 +199,6 @@ class DashboardSummary(BaseModel):
 class SystemConfigBase(BaseModel):
     reading_interval: int = 10
     device_timeout: int = 5
-    ota_check_interval: int = 300
     moisture_jump_threshold: float = 15.0
     ntfy_enabled: bool = False
     ntfy_server_url: str = "https://ntfy.sh"
@@ -229,7 +211,6 @@ class SystemConfigBase(BaseModel):
 class SystemConfigUpdate(BaseModel):
     reading_interval: Optional[int] = None
     device_timeout: Optional[int] = None
-    ota_check_interval: Optional[int] = None
     moisture_jump_threshold: Optional[float] = None
     ntfy_enabled: Optional[bool] = None
     ntfy_server_url: Optional[str] = None
@@ -280,7 +261,6 @@ class HeartbeatResponse(BaseModel):
     name: str
     firmware_version: Optional[str] = None
     reading_interval: int
-    ota_check_interval: int
     sensors: List[HeartbeatSensorConfig] = []
 
 
