@@ -3,7 +3,7 @@ services:
     build: ./backend
     restart: unless-stopped
     volumes:
-      - ${DATA_DIR:-./data}:/data
+      - /mnt/nas1/appdata/plant-water-array:/data
     environment:
       - DATABASE_URL=sqlite:////data/backend.db
       - CORS_ORIGINS=${CORS_ORIGINS:-https://plants.loganmiller.dev}
