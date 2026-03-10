@@ -4,7 +4,7 @@ import { Device, Sensor, Reading, Alert, Threshold, SensorUpdate, CalibrationDat
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const getDevices = async (): Promise<Device[]> => {
-  const response = await axios.get(`${API_URL}/devices`);
+  const response = await axios.get(`${API_URL}/devices/`);
   return response.data;
 };
 
@@ -18,7 +18,7 @@ export const deleteDevice = async (deviceId: string): Promise<void> => {
 };
 
 export const getSensors = async (deviceId?: string): Promise<Sensor[]> => {
-  const response = await axios.get(`${API_URL}/sensors`, {
+  const response = await axios.get(`${API_URL}/sensors/`, {
     params: deviceId ? { device_id: deviceId } : {}
   });
   return response.data;
@@ -37,7 +37,7 @@ export const createReading = async (deviceId: string, sensorId: number, moisture
 };
 
 export const getAlerts = async (params?: { sensor_id?: number; unread_only?: boolean }): Promise<Alert[]> => {
-  const response = await axios.get(`${API_URL}/alerts`, { params });
+  const response = await axios.get(`${API_URL}/alerts/`, { params });
   return response.data;
 };
 
