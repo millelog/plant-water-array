@@ -7,7 +7,7 @@ WIFI_PASSWORD = "Your_Password_Here"
 SERVER_URL = "http://your.server.url:port"
 DEVICE_NAME = "YourDeviceName"
 READING_INTERVAL = 10
-DEPLOY_TOKEN = "changeme"
+DEPLOY_TOKEN = "some_random_32char_hex_string" # python -c "import secrets; print(secrets.token_hex(16))"
 DEPLOY_PORT = 8266
 
 # ------------------------------------------------------------------
