@@ -54,13 +54,13 @@ class Display:
         self.oled.show()
 
     def show_readings_enhanced(self, readings_data, device_name="Device"):
-        """Enhanced display with server names, alerts, and pagination.
+        """Enhanced display with server names, alerts, moisture bars, and pagination.
 
         readings_data = [{"name": str, "moisture": float, "alert": bool, "pin": int}, ...]
-        Layout (128x64 @ 8x8 font = 16 chars x 8 lines):
-          Line 0: header (device name + alert count)
-          Line 1: separator
-          Lines 2-7: sensor rows (up to 6 per page), alerts sorted first
+        Layout (128x64, yellow zone y=0-15, blue zone y=16-63):
+          y=0 (yellow): header (device name + alert count)
+          y=10: separator
+          y=16+: sensor rows (blue zone, up to 5 per page) with moisture bars
         """
         if not self.available:
             return
@@ -69,15 +69,15 @@ class Display:
         sorted_data = sorted(readings_data, key=lambda r: (not r.get("alert", False), r["name"]))
         alert_count = sum(1 for r in sorted_data if r.get("alert", False))
 
-        # Pagination: 6 sensor rows per page
-        rows_per_page = 6
+        # Pagination: 5 sensor rows per page (blue zone = 48px, 9px/row)
+        rows_per_page = 5
         total_pages = max(1, (len(sorted_data) + rows_per_page - 1) // rows_per_page)
         page = (time.ticks_ms() // 5000) % total_pages if total_pages > 1 else 0
         page_items = sorted_data[page * rows_per_page:(page + 1) * rows_per_page]
 
         self.oled.fill(0)
 
-        # Header line: truncated device name + alert indicator or page
+        # Header (yellow zone y=0)
         header_name = device_name[:10]
         if alert_count > 0:
             header_right = "!{}".format(alert_count)
@@ -85,29 +85,41 @@ class Display:
             header_right = "{}/{}".format(page + 1, total_pages)
         else:
             header_right = ""
-        # Right-align header_right
-        right_x = self.width - len(header_right) * 8
         self.oled.text(header_name, 0, 0)
         if header_right:
+            right_x = self.width - len(header_right) * 8
             self.oled.text(header_right, right_x, 0)
 
-        # 1px separator at y=9
-        self.oled.hline(0, 9, self.width, 1)
+        # Separator at y=10 (still yellow zone)
+        self.oled.hline(0, 10, self.width, 1)
 
-        # Sensor rows starting at y=12
-        y = 12
+        # Sensor rows (blue zone, starting at y=16)
+        y = 16
         for r in page_items:
+            moisture = r["moisture"]
             prefix = "!" if r.get("alert", False) else " "
-            name = r["name"]
-            # Truncate name to fit: prefix(1) + name(N) + space(1) + moisture(4) = 16 chars
-            # moisture like " 67%" is 4 chars max, so name gets up to 10 chars
-            name = name[:10]
-            moisture_str = "{}%".format(int(r["moisture"]))
-            # Right-align moisture
-            mx = self.width - len(moisture_str) * 8
+            name = r["name"][:7]
+            moisture_str = "{}%".format(int(moisture))
+
+            # Text: prefix + name (up to 8 chars = 64px)
             self.oled.text(prefix + name, 0, y)
+
+            # Moisture bar (x=68, 22px wide, 6px tall)
+            bar_x = 68
+            bar_w = 22
+            bar_h = 6
+            bar_y = y + 1
+            self.oled.rect(bar_x, bar_y, bar_w, bar_h, 1)
+            fill_max = bar_w - 2
+            fill_w = max(0, int(fill_max * moisture / 100))
+            if fill_w > 0:
+                self.oled.fill_rect(bar_x + 1, bar_y + 1, fill_w, bar_h - 2, 1)
+
+            # Moisture percentage right-aligned
+            mx = self.width - len(moisture_str) * 8
             self.oled.text(moisture_str, mx, y)
-            y += 9  # slightly tighter than 10 for more rows
+
+            y += 9
 
         self.oled.show()
 

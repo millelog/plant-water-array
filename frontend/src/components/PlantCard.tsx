@@ -100,19 +100,13 @@ const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange, onRefresh }
           </div>
         )}
 
-        <div className="flex items-center justify-between mt-auto pt-1">
-          {sensor.last_reading_time && (
+        {sensor.last_reading_time && (
+          <div className="mt-auto pt-1">
             <span className="text-[11px] text-text-muted font-mono">
               {formatTimeAgo(sensor.last_reading_time)}
             </span>
-          )}
-          <Link
-            to={`/plant/${sensor.id}`}
-            className="text-xs text-accent hover:text-accent-dim font-medium transition-colors ml-auto py-2 md:py-0"
-          >
-            Details &rarr;
-          </Link>
-        </div>
+          </div>
+        )}
 
         {/* Quick actions overlay */}
         <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-canvas-50 via-canvas-50/95 to-transparent pt-8 pb-3 px-4 flex items-end justify-center gap-2 transition-opacity ${showActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto'}`}>
@@ -134,7 +128,7 @@ const PlantCard: React.FC<PlantCardProps> = ({ sensor, onNameChange, onRefresh }
             onClick={(e) => e.stopPropagation()}
             className="px-4 py-2 md:px-3 md:py-1.5 rounded-lg text-xs font-mono text-text-muted border border-surface-border hover:text-text hover:bg-canvas-200 transition-colors"
           >
-            History
+            Details
           </Link>
         </div>
       </div>

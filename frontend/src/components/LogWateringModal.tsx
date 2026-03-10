@@ -38,10 +38,10 @@ const LogWateringModal: React.FC<LogWateringModalProps> = ({ sensorId, open, onC
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-fade-in" />
+        <Dialog.Content className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
                                    bg-canvas-50 border border-surface-border rounded-2xl shadow-card
-                                   p-6 w-full max-w-sm animate-slide-up">
+                                   p-6 w-full max-w-sm animate-modal-slide-up">
           <Dialog.Title className="font-display text-xl text-text mb-4">
             Log Watering
           </Dialog.Title>
