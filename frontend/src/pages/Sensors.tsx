@@ -5,8 +5,10 @@ import CalibrationWizard from '../components/CalibrationWizard';
 import InlineEdit from '../components/InlineEdit';
 import { Sensor, Device, Zone, SensorHealthIndicator } from '../types';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Sensors: React.FC = () => {
+  const { isDemo } = useAuth();
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
@@ -74,14 +76,18 @@ const Sensors: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       Cell: ({ value }: { value: string | null }, row: any) => (
         <div>
-          <InlineEdit
-            value={value || `Sensor ${row.sensor_id}`}
-            onSave={async (newName) => {
-              await updateSensor(row.id, { name: newName });
-              fetchData();
-            }}
-            className="text-text font-medium"
-          />
+          {isDemo ? (
+            <div className="text-text font-medium">{value || `Sensor ${row.sensor_id}`}</div>
+          ) : (
+            <InlineEdit
+              value={value || `Sensor ${row.sensor_id}`}
+              onSave={async (newName) => {
+                await updateSensor(row.id, { name: newName });
+                fetchData();
+              }}
+              className="text-text font-medium"
+            />
+          )}
           <div className="text-xs text-text-muted font-mono">ID: {row.sensor_id}</div>
         </div>
       ),
@@ -188,12 +194,14 @@ const Sensors: React.FC = () => {
           >
             Details
           </Link>
-          <button
-            className="btn-secondary text-xs py-1.5 px-3"
-            onClick={() => setCalibratingSensor(row as Sensor)}
-          >
-            Calibrate
-          </button>
+          {!isDemo && (
+            <button
+              className="btn-secondary text-xs py-1.5 px-3"
+              onClick={() => setCalibratingSensor(row as Sensor)}
+            >
+              Calibrate
+            </button>
+          )}
         </div>
       ),
     },

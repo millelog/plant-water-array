@@ -41,6 +41,14 @@ def upgrade_db():
             "ALTER TABLE system_config ADD COLUMN weather_longitude FLOAT",
             "ALTER TABLE system_config ADD COLUMN retention_days INTEGER DEFAULT 90",
             "ALTER TABLE devices ADD COLUMN deploy_token TEXT",
+            "ALTER TABLE devices ADD COLUMN is_demo BOOLEAN DEFAULT 0",
+            "ALTER TABLE sensors ADD COLUMN is_demo BOOLEAN DEFAULT 0",
+            "ALTER TABLE readings ADD COLUMN is_demo BOOLEAN DEFAULT 0",
+            "ALTER TABLE zones ADD COLUMN is_demo BOOLEAN DEFAULT 0",
+            "ALTER TABLE thresholds ADD COLUMN is_demo BOOLEAN DEFAULT 0",
+            "ALTER TABLE alerts ADD COLUMN is_demo BOOLEAN DEFAULT 0",
+            "ALTER TABLE watering_logs ADD COLUMN is_demo BOOLEAN DEFAULT 0",
+            "ALTER TABLE heartbeat_logs ADD COLUMN is_demo BOOLEAN DEFAULT 0",
         ]
         for sql in migrations:
             try:

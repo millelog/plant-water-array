@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 from auth import (
     ADMIN_PASSWORD,
+    UserInfo,
     verify_password,
     hash_password,
     create_access_token,
@@ -41,17 +42,26 @@ async def login(body: LoginRequest):
     if not verify_password(body.password, _ADMIN_HASH):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
     return TokenResponse(
-        access_token=create_access_token("admin"),
-        refresh_token=create_refresh_token("admin"),
+        access_token=create_access_token("admin", role="admin"),
+        refresh_token=create_refresh_token("admin", role="admin"),
+    )
+
+
+@router.post("/demo", response_model=TokenResponse)
+async def demo_login():
+    """Get demo tokens — no password required."""
+    return TokenResponse(
+        access_token=create_access_token("demo", role="demo"),
+        refresh_token=create_refresh_token("demo", role="demo"),
     )
 
 
 @router.post("/refresh", response_model=AccessTokenResponse)
 async def refresh(body: RefreshRequest):
-    subject = _decode_token(body.refresh_token, "refresh")
-    return AccessTokenResponse(access_token=create_access_token(subject))
+    user_info = _decode_token(body.refresh_token, "refresh")
+    return AccessTokenResponse(access_token=create_access_token(user_info.username, role=user_info.role))
 
 
 @router.get("/me")
-async def me(current_user: str = Depends(get_current_user)):
-    return {"username": current_user}
+async def me(current_user: UserInfo = Depends(get_current_user)):
+    return {"username": current_user.username, "role": current_user.role}

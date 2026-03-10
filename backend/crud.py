@@ -88,8 +88,8 @@ def update_device(db: Session, device_id: str, update: schemas.DeviceUpdate):
     return device
 
 
-def get_sensors(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Sensor).options(joinedload(models.Sensor.device)).offset(skip).limit(limit).all()
+def get_sensors(db: Session, skip: int = 0, limit: int = 100, is_demo: bool = False):
+    return db.query(models.Sensor).options(joinedload(models.Sensor.device)).filter(models.Sensor.is_demo == is_demo).offset(skip).limit(limit).all()
 
 
 def get_sensor_by_sensor_id(db: Session, device_id: str, sensor_id: int):
@@ -99,10 +99,10 @@ def get_sensor_by_sensor_id(db: Session, device_id: str, sensor_id: int):
     ).first()
 
 
-def get_sensors_by_device_id(db: Session, device_id: str):
+def get_sensors_by_device_id(db: Session, device_id: str, is_demo: bool = False):
     return db.query(models.Sensor).options(
         joinedload(models.Sensor.threshold)
-    ).join(models.Device).filter(models.Device.device_id == device_id).all()
+    ).join(models.Device).filter(models.Device.device_id == device_id, models.Sensor.is_demo == is_demo).all()
 
 
 def update_sensor(db: Session, sensor_id: int, sensor_update: schemas.SensorUpdate):
@@ -220,13 +220,13 @@ def get_latest_raw_reading(db: Session, sensor_db_id: int):
             .first())
 
 
-def get_readings(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Reading).offset(skip).limit(limit).all()
+def get_readings(db: Session, skip: int = 0, limit: int = 100, is_demo: bool = False):
+    return db.query(models.Reading).filter(models.Reading.is_demo == is_demo).offset(skip).limit(limit).all()
 
 
-def get_readings_by_sensor(db: Session, device_id: str, sensor_db_id: int, start_time: datetime = None, end_time: datetime = None, skip: int = 0, limit: int = None):
+def get_readings_by_sensor(db: Session, device_id: str, sensor_db_id: int, start_time: datetime = None, end_time: datetime = None, skip: int = 0, limit: int = None, is_demo: bool = False):
     logging.info(f"Fetching readings for device_id: {device_id}, sensor_db_id: {sensor_db_id}, limit: {limit}")
-    query = db.query(models.Reading).filter(models.Reading.device_id == device_id, models.Reading.sensor_id == sensor_db_id)
+    query = db.query(models.Reading).filter(models.Reading.device_id == device_id, models.Reading.sensor_id == sensor_db_id, models.Reading.is_demo == is_demo)
     if start_time:
         query = query.filter(models.Reading.timestamp >= start_time)
     if end_time:
@@ -388,8 +388,8 @@ def create_zone(db: Session, zone: schemas.ZoneCreate):
     return db_zone
 
 
-def get_zones(db: Session):
-    return db.query(models.Zone).order_by(models.Zone.sort_order, models.Zone.name).all()
+def get_zones(db: Session, is_demo: bool = False):
+    return db.query(models.Zone).filter(models.Zone.is_demo == is_demo).order_by(models.Zone.sort_order, models.Zone.name).all()
 
 
 def update_zone(db: Session, zone_id: int, zone_update: schemas.ZoneUpdate):
@@ -417,19 +417,19 @@ def delete_zone(db: Session, zone_id: int):
 
 # Alert helpers
 
-def get_unread_alert_count(db: Session) -> int:
-    return db.query(func.count(models.Alert.id)).filter(models.Alert.read == False).scalar() or 0
+def get_unread_alert_count(db: Session, is_demo: bool = False) -> int:
+    return db.query(func.count(models.Alert.id)).filter(models.Alert.read == False, models.Alert.is_demo == is_demo).scalar() or 0
 
 
-def mark_all_alerts_read(db: Session):
-    db.query(models.Alert).filter(models.Alert.read == False).update(
+def mark_all_alerts_read(db: Session, is_demo: bool = False):
+    db.query(models.Alert).filter(models.Alert.read == False, models.Alert.is_demo == is_demo).update(
         {models.Alert.read: True}, synchronize_session=False
     )
     db.commit()
 
 
-def get_alerts_filtered(db: Session, sensor_id: int = None, unread_only: bool = False, skip: int = 0, limit: int = 100):
-    query = db.query(models.Alert)
+def get_alerts_filtered(db: Session, sensor_id: int = None, unread_only: bool = False, skip: int = 0, limit: int = 100, is_demo: bool = False):
+    query = db.query(models.Alert).filter(models.Alert.is_demo == is_demo)
     if sensor_id is not None:
         query = query.filter(models.Alert.sensor_id == sensor_id)
     if unread_only:
@@ -439,24 +439,24 @@ def get_alerts_filtered(db: Session, sensor_id: int = None, unread_only: bool = 
 
 # Sensor by DB id
 
-def get_sensor_by_db_id(db: Session, sensor_db_id: int):
+def get_sensor_by_db_id(db: Session, sensor_db_id: int, is_demo: bool = False):
     return db.query(models.Sensor).options(
         joinedload(models.Sensor.device),
         joinedload(models.Sensor.threshold),
         joinedload(models.Sensor.zone)
-    ).filter(models.Sensor.id == sensor_db_id).first()
+    ).filter(models.Sensor.id == sensor_db_id, models.Sensor.is_demo == is_demo).first()
 
 
 # Dashboard summary
 
-def get_dashboard_summary(db: Session) -> schemas.DashboardSummary:
+def get_dashboard_summary(db: Session, is_demo: bool = False) -> schemas.DashboardSummary:
     now = datetime.now(timezone.utc)
     sys_config = get_system_config(db)
     online_cutoff = now - timedelta(minutes=sys_config.device_timeout)
     hour_24_ago = now - timedelta(hours=24)
 
     # Stats
-    all_devices = db.query(models.Device).all()
+    all_devices = db.query(models.Device).filter(models.Device.is_demo == is_demo).all()
     total_devices = len(all_devices)
     online_devices = sum(1 for d in all_devices if d.last_seen and d.last_seen.replace(tzinfo=timezone.utc) >= online_cutoff)
 
@@ -464,10 +464,10 @@ def get_dashboard_summary(db: Session) -> schemas.DashboardSummary:
         joinedload(models.Sensor.device),
         joinedload(models.Sensor.threshold),
         joinedload(models.Sensor.zone)
-    ).all()
+    ).filter(models.Sensor.is_demo == is_demo).all()
     total_sensors = len(all_sensors)
 
-    unread_alert_count = get_unread_alert_count(db)
+    unread_alert_count = get_unread_alert_count(db, is_demo=is_demo)
 
     sensor_summaries = []
     sensors_needing_water = 0
@@ -592,8 +592,8 @@ def create_watering_log(db: Session, log_create: schemas.WateringLogCreate):
     return db_log
 
 
-def get_watering_logs_by_sensor(db: Session, sensor_id: int, start_time: datetime = None, end_time: datetime = None, skip: int = 0, limit: int = 50):
-    query = db.query(models.WateringLog).filter(models.WateringLog.sensor_id == sensor_id)
+def get_watering_logs_by_sensor(db: Session, sensor_id: int, start_time: datetime = None, end_time: datetime = None, skip: int = 0, limit: int = 50, is_demo: bool = False):
+    query = db.query(models.WateringLog).filter(models.WateringLog.sensor_id == sensor_id, models.WateringLog.is_demo == is_demo)
     if start_time:
         query = query.filter(models.WateringLog.timestamp >= start_time)
     if end_time:
@@ -612,7 +612,7 @@ def delete_watering_log(db: Session, log_id: int) -> bool:
 
 # Aggregated readings
 
-def get_aggregated_readings(db: Session, sensor_db_id: int, period: str, start_time: datetime = None, end_time: datetime = None):
+def get_aggregated_readings(db: Session, sensor_db_id: int, period: str, start_time: datetime = None, end_time: datetime = None, is_demo: bool = False):
     if period == "daily":
         fmt = '%Y-%m-%d'
     else:
@@ -624,7 +624,7 @@ def get_aggregated_readings(db: Session, sensor_db_id: int, period: str, start_t
         func.min(models.Reading.moisture).label('min_moisture'),
         func.max(models.Reading.moisture).label('max_moisture'),
         func.count(models.Reading.id).label('reading_count'),
-    ).filter(models.Reading.sensor_id == sensor_db_id)
+    ).filter(models.Reading.sensor_id == sensor_db_id, models.Reading.is_demo == is_demo)
 
     if start_time:
         query = query.filter(models.Reading.timestamp >= start_time)
@@ -637,13 +637,14 @@ def get_aggregated_readings(db: Session, sensor_db_id: int, period: str, start_t
 
 # Drying rate
 
-def get_drying_rate(db: Session, sensor_db_id: int, period_days: int = 7):
+def get_drying_rate(db: Session, sensor_db_id: int, period_days: int = 7, is_demo: bool = False):
     now = datetime.now(timezone.utc)
     start_time = now - timedelta(days=period_days)
 
     # Current moisture
     latest = db.query(models.Reading).filter(
-        models.Reading.sensor_id == sensor_db_id
+        models.Reading.sensor_id == sensor_db_id,
+        models.Reading.is_demo == is_demo,
     ).order_by(models.Reading.timestamp.desc()).first()
     current_moisture = latest.moisture if latest else None
 
@@ -654,12 +655,14 @@ def get_drying_rate(db: Session, sensor_db_id: int, period_days: int = 7):
     # Readings in period
     readings = db.query(models.Reading).filter(
         models.Reading.sensor_id == sensor_db_id,
+        models.Reading.is_demo == is_demo,
         models.Reading.timestamp >= start_time
     ).order_by(models.Reading.timestamp.asc()).all()
 
     # Watering logs in period for exclusion
     watering_logs = db.query(models.WateringLog).filter(
         models.WateringLog.sensor_id == sensor_db_id,
+        models.WateringLog.is_demo == is_demo,
         models.WateringLog.timestamp >= start_time
     ).all()
 
@@ -742,9 +745,9 @@ def create_heartbeat_log(db: Session, device_id: str, heartbeat: schemas.DeviceH
     return log
 
 
-def get_heartbeat_logs(db: Session, device_id: str, limit: int = 50):
+def get_heartbeat_logs(db: Session, device_id: str, limit: int = 50, is_demo: bool = False):
     return (db.query(models.HeartbeatLog)
-            .filter(models.HeartbeatLog.device_id == device_id)
+            .filter(models.HeartbeatLog.device_id == device_id, models.HeartbeatLog.is_demo == is_demo)
             .order_by(models.HeartbeatLog.timestamp.desc())
             .limit(limit)
             .all())
@@ -752,11 +755,11 @@ def get_heartbeat_logs(db: Session, device_id: str, limit: int = 50):
 
 # Sensor health computation
 
-def compute_sensor_health(db: Session, sensor_db_id: int, expected_interval_seconds: int):
+def compute_sensor_health(db: Session, sensor_db_id: int, expected_interval_seconds: int, is_demo: bool = False):
     now = datetime.now(timezone.utc)
 
     readings = (db.query(models.Reading)
-                .filter(models.Reading.sensor_id == sensor_db_id)
+                .filter(models.Reading.sensor_id == sensor_db_id, models.Reading.is_demo == is_demo)
                 .order_by(models.Reading.timestamp.desc())
                 .limit(20)
                 .all())
@@ -811,7 +814,7 @@ def compute_sensor_health(db: Session, sensor_db_id: int, expected_interval_seco
 
 # Compare readings (multi-sensor)
 
-def get_compare_readings(db: Session, sensor_db_ids: list, hours: int):
+def get_compare_readings(db: Session, sensor_db_ids: list, hours: int, is_demo: bool = False):
     now = datetime.now(timezone.utc)
     start_time = now - timedelta(hours=hours)
     aggregated = hours > 24
@@ -821,7 +824,7 @@ def get_compare_readings(db: Session, sensor_db_ids: list, hours: int):
         sensor = db.query(models.Sensor).options(
             joinedload(models.Sensor.device),
             joinedload(models.Sensor.zone),
-        ).filter(models.Sensor.id == sid).first()
+        ).filter(models.Sensor.id == sid, models.Sensor.is_demo == is_demo).first()
         if not sensor:
             continue
 

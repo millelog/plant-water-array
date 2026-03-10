@@ -11,6 +11,9 @@ app = FastAPI()
 init_db()
 upgrade_db()
 
+from seed_demo import seed_demo_data
+seed_demo_data()
+
 # Configure CORS
 cors_origins_raw = os.getenv("CORS_ORIGINS", "*")
 cors_origins = [o.strip() for o in cors_origins_raw.split(",")]

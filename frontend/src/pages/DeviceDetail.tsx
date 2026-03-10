@@ -12,6 +12,7 @@ import {
 import DataTable from '../components/DataTable';
 import InlineEdit from '../components/InlineEdit';
 import { Sensor } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 function timeAgo(dateString: string): string {
   const now = new Date();
@@ -63,6 +64,7 @@ function computeUptime(heartbeats: HeartbeatLogEntry[]): string {
 }
 
 const DeviceDetail: React.FC = () => {
+  const { isDemo } = useAuth();
   const { deviceId } = useParams<{ deviceId: string }>();
   const [device, setDevice] = useState<Device | null>(null);
   const [sensors, setSensors] = useState<Sensor[]>([]);
@@ -214,13 +216,15 @@ const DeviceDetail: React.FC = () => {
       <div>
         <Link to="/devices" className="text-xs text-text-muted hover:text-accent transition-colors mb-2 inline-block">&larr; Devices</Link>
         <h1 className="page-title">
-          <InlineEdit
-            value={device.name}
-            onSave={async (newName) => {
-              await updateDevice(device.device_id, { name: newName });
-              loadData();
-            }}
-          />
+          {isDemo ? device.name : (
+            <InlineEdit
+              value={device.name}
+              onSave={async (newName) => {
+                await updateDevice(device.device_id, { name: newName });
+                loadData();
+              }}
+            />
+          )}
         </h1>
       </div>
 

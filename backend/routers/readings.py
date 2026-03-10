@@ -10,7 +10,7 @@ from datetime import datetime
 import logging
 import csv
 import io
-from auth import get_current_user, verify_device_api_key
+from auth import UserInfo, get_current_user, verify_device_api_key, require_admin
 
 router = APIRouter(
     tags=["readings"],
@@ -28,9 +28,9 @@ async def create_reading(reading: schemas.ReadingCreate, db: Session = Depends(g
 
 
 @router.get("/readings", response_model=List[schemas.Reading])
-async def read_readings(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
+async def read_readings(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), user: UserInfo = Depends(get_current_user)):
     logging.info(f"Received request for readings: {request.url}")
-    readings = crud.get_readings(db, skip=skip, limit=limit)
+    readings = crud.get_readings(db, skip=skip, limit=limit, is_demo=user.is_demo)
     return readings
 
 
@@ -40,13 +40,13 @@ async def export_readings_csv(
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
     db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
+    user: UserInfo = Depends(get_current_user),
 ):
-    sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
+    sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id, models.Sensor.is_demo == user.is_demo).first()
     if not sensor:
         raise HTTPException(status_code=404, detail="Sensor not found")
 
-    query = db.query(models.Reading).filter(models.Reading.sensor_id == sensor_id)
+    query = db.query(models.Reading).filter(models.Reading.sensor_id == sensor_id, models.Reading.is_demo == user.is_demo)
     if start:
         query = query.filter(models.Reading.timestamp >= start)
     if end:
@@ -73,7 +73,7 @@ async def compare_readings(
     sensor_ids: str = Query(..., description="Comma-separated sensor DB IDs"),
     hours: int = Query(168, ge=1, le=8760, description="Time range in hours (default 7d, max 1yr)"),
     db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
+    user: UserInfo = Depends(get_current_user),
 ):
     try:
         ids = [int(x.strip()) for x in sensor_ids.split(",") if x.strip()]
@@ -83,23 +83,23 @@ async def compare_readings(
         raise HTTPException(status_code=400, detail="At least 1 sensor_id required")
     if len(ids) > 10:
         raise HTTPException(status_code=400, detail="Maximum 10 sensors allowed")
-    return crud.get_compare_readings(db, sensor_db_ids=ids, hours=hours)
+    return crud.get_compare_readings(db, sensor_db_ids=ids, hours=hours, is_demo=user.is_demo)
 
 
 @router.get("/readings/sensor/{sensor_id}/aggregated", response_model=schemas.AggregatedReadingsResponse)
 async def get_aggregated_readings(
     sensor_id: int,
-    period: str = Query("daily", regex="^(daily|weekly)$"),
+    period: str = Query("daily", pattern="^(daily|weekly)$"),
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
     db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
+    user: UserInfo = Depends(get_current_user),
 ):
-    sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
+    sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id, models.Sensor.is_demo == user.is_demo).first()
     if not sensor:
         raise HTTPException(status_code=404, detail="Sensor not found")
 
-    rows = crud.get_aggregated_readings(db, sensor_db_id=sensor_id, period=period, start_time=start_time, end_time=end_time)
+    rows = crud.get_aggregated_readings(db, sensor_db_id=sensor_id, period=period, start_time=start_time, end_time=end_time, is_demo=user.is_demo)
     data = [
         schemas.AggregatedReadingPoint(
             period_start=row.period_start,
@@ -114,22 +114,22 @@ async def get_aggregated_readings(
 
 
 @router.get("/readings/sensor/{sensor_id}/drying-rate", response_model=schemas.DryingRateResponse)
-async def get_drying_rate(sensor_id: int, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
-    sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
+async def get_drying_rate(sensor_id: int, db: Session = Depends(get_db), user: UserInfo = Depends(get_current_user)):
+    sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id, models.Sensor.is_demo == user.is_demo).first()
     if not sensor:
         raise HTTPException(status_code=404, detail="Sensor not found")
 
-    result = crud.get_drying_rate(db, sensor_db_id=sensor_id)
+    result = crud.get_drying_rate(db, sensor_db_id=sensor_id, is_demo=user.is_demo)
     return result
 
 
 @router.get("/readings/sensor/{sensor_id}", response_model=List[schemas.Reading])
-async def read_readings_by_sensor(request: Request, sensor_id: int, device_id: str, start_time: datetime = None, end_time: datetime = None, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
+async def read_readings_by_sensor(request: Request, sensor_id: int, device_id: str, start_time: datetime = None, end_time: datetime = None, db: Session = Depends(get_db), user: UserInfo = Depends(get_current_user)):
     logging.info(f"Received request for readings by sensor: {request.url}")
     db_sensor = crud.get_sensor_by_sensor_id(db, device_id=device_id, sensor_id=sensor_id)
     if db_sensor is None:
         raise HTTPException(status_code=404, detail=f"Sensor with id {sensor_id} not found for device {device_id}")
-    readings = crud.get_readings_by_sensor(db, device_id=device_id, sensor_db_id=db_sensor.id, start_time=start_time, end_time=end_time)
+    readings = crud.get_readings_by_sensor(db, device_id=device_id, sensor_db_id=db_sensor.id, start_time=start_time, end_time=end_time, is_demo=user.is_demo)
     if not readings:
         logging.warning(f"No readings found for sensor {sensor_id} of device {device_id}")
     return readings
@@ -142,7 +142,7 @@ async def read_readings_by_device_and_sensor(
     sensor_id: int,
     limit: int = Query(None, description="Limit the number of readings returned"),
     db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
+    user: UserInfo = Depends(get_current_user),
 ):
     logging.info(f"Received request for readings by device and sensor: {request.url}")
     try:
@@ -154,7 +154,7 @@ async def read_readings_by_device_and_sensor(
         if db_sensor is None:
             raise HTTPException(status_code=404, detail=f"Sensor with id {sensor_id} not found for device {device_id}")
 
-        readings = crud.get_readings_by_sensor(db, device_id=device_id, sensor_db_id=db_sensor.id, limit=limit)
+        readings = crud.get_readings_by_sensor(db, device_id=device_id, sensor_db_id=db_sensor.id, limit=limit, is_demo=user.is_demo)
         if not readings:
             logging.warning(f"No readings found for sensor {sensor_id} of device {device_id}")
             return []
@@ -167,6 +167,6 @@ async def read_readings_by_device_and_sensor(
 
 
 @router.delete("/readings/cleanup")
-async def cleanup_old_readings(older_than_days: int = Query(90, ge=1), db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
+async def cleanup_old_readings(older_than_days: int = Query(90, ge=1), db: Session = Depends(get_db), _user: UserInfo = Depends(require_admin)):
     count = crud.delete_old_readings(db, older_than_days=older_than_days)
     return {"deleted": count, "older_than_days": older_than_days}

@@ -4,7 +4,7 @@ import { Alert } from '../types';
 
 interface AlertCardProps {
   alert: Alert;
-  onMarkAsRead: (alertId: number) => void;
+  onMarkAsRead?: (alertId: number) => void;
 }
 
 const AlertCard: React.FC<AlertCardProps> = ({ alert, onMarkAsRead }) => {
@@ -32,7 +32,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onMarkAsRead }) => {
             {new Date(alert.timestamp).toLocaleString()}
           </div>
         </div>
-        {!alert.read && (
+        {!alert.read && onMarkAsRead && (
           <button
             onClick={() => onMarkAsRead(alert.id)}
             className="btn-ghost text-xs flex-shrink-0"

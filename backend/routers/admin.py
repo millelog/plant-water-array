@@ -10,12 +10,12 @@ from sqlalchemy import func
 
 import models, schemas, crud
 from dependencies import get_db
-from auth import get_current_user
+from auth import require_admin
 
 router = APIRouter(
     prefix="/admin",
     tags=["admin"],
-    dependencies=[Depends(get_current_user)],
+    dependencies=[Depends(require_admin)],
 )
 
 def _get_db_path() -> str:

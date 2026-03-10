@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Zone, SystemConfig, DatabaseStats } from '../types';
 import { getZones, createZone, updateZone, deleteZone, cleanupOldReadings, getSystemConfig, updateSystemConfig, testNotification, getDatabaseStats, downloadBackup } from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
 const Settings: React.FC = () => {
+  const { isDemo } = useAuth();
+
+  if (isDemo) {
+    return (
+      <div className="max-w-2xl animate-fade-in">
+        <div className="card p-8 text-center">
+          <div className="text-text font-medium mb-2">Settings Unavailable</div>
+          <p className="text-sm text-text-muted">Settings are not available in demo mode.</p>
+        </div>
+      </div>
+    );
+  }
   const [zones, setZones] = useState<Zone[]>([]);
   const [newZoneName, setNewZoneName] = useState('');
   const [editingZoneId, setEditingZoneId] = useState<number | null>(null);

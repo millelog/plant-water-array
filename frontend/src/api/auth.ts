@@ -21,12 +21,17 @@ export const loginApi = async (password: string): Promise<TokenResponse> => {
   return response.data;
 };
 
+export const loginDemoApi = async (): Promise<TokenResponse> => {
+  const response = await authClient.post('/auth/demo');
+  return response.data;
+};
+
 export const refreshTokenApi = async (refreshToken: string): Promise<AccessTokenResponse> => {
   const response = await authClient.post('/auth/refresh', { refresh_token: refreshToken });
   return response.data;
 };
 
-export const checkAuthApi = async (token: string): Promise<{ username: string }> => {
+export const checkAuthApi = async (token: string): Promise<{ username: string; role: string }> => {
   const response = await authClient.get('/auth/me', {
     headers: { Authorization: `Bearer ${token}` },
   });

@@ -21,10 +21,12 @@ import AlertCard from '../components/AlertCard';
 import LogWateringModal from '../components/LogWateringModal';
 import WateringTimeline from '../components/WateringTimeline';
 import PlantInsights from '../components/PlantInsights';
+import { useAuth } from '../context/AuthContext';
 
 type TimeRange = '24h' | '7d' | '30d';
 
 const PlantDetail: React.FC = () => {
+  const { isDemo } = useAuth();
   const { sensorDbId } = useParams<{ sensorDbId: string }>();
   const [sensor, setSensor] = useState<Sensor | null>(null);
   const [readings, setReadings] = useState<Reading[]>([]);
@@ -190,28 +192,39 @@ const PlantDetail: React.FC = () => {
         <div>
           <Link to="/" className="text-xs text-text-muted hover:text-accent transition-colors mb-2 inline-block">&larr; Dashboard</Link>
           <h1 className="page-title">
-            <InlineEdit
-              value={sensor.name || `Sensor ${sensor.sensor_id}`}
-              onSave={handleRename}
-            />
+            {isDemo ? (sensor.name || `Sensor ${sensor.sensor_id}`) : (
+              <InlineEdit
+                value={sensor.name || `Sensor ${sensor.sensor_id}`}
+                onSave={handleRename}
+              />
+            )}
           </h1>
           <div className="flex items-center gap-3 mt-2">
             <span className="text-sm text-text-secondary">on {devices.find(d => d.device_id === sensor.device_id)?.name || sensor.device_id}</span>
-            <select
-              value={sensor.zone_id ?? ''}
-              onChange={(e) => handleZoneChange(e.target.value ? Number(e.target.value) : null)}
-              className="input !w-auto !py-1 !pl-2 !pr-8 text-xs"
-            >
-              <option value="">No zone</option>
-              {zones.map(z => (
-                <option key={z.id} value={z.id}>{z.name}</option>
-              ))}
-            </select>
+            {!isDemo && (
+              <select
+                value={sensor.zone_id ?? ''}
+                onChange={(e) => handleZoneChange(e.target.value ? Number(e.target.value) : null)}
+                className="input !w-auto !py-1 !pl-2 !pr-8 text-xs"
+              >
+                <option value="">No zone</option>
+                {zones.map(z => (
+                  <option key={z.id} value={z.id}>{z.name}</option>
+                ))}
+              </select>
+            )}
+            {isDemo && sensor.zone_id && (
+              <span className="badge bg-accent-glow text-accent border border-accent/15">
+                {zones.find(z => z.id === sensor.zone_id)?.name}
+              </span>
+            )}
           </div>
         </div>
-        <button onClick={() => setShowWateringModal(true)} className="btn-primary shrink-0">
-          Log Watering
-        </button>
+        {!isDemo && (
+          <button onClick={() => setShowWateringModal(true)} className="btn-primary shrink-0">
+            Log Watering
+          </button>
+        )}
       </div>
 
       {/* Current Reading */}
@@ -245,36 +258,38 @@ const PlantDetail: React.FC = () => {
       <PlantInsights sensorId={sensorId} />
 
       {/* Threshold Settings */}
-      <div className="card p-6">
-        <div className="section-title mb-4">Threshold Settings</div>
-        <div className="flex items-end gap-4">
-          <div>
-            <label className="text-xs text-text-muted font-mono block mb-1">Min Moisture %</label>
-            <input
-              type="number"
-              value={thresholdMin}
-              onChange={(e) => setThresholdMin(e.target.value)}
-              className="input !w-28"
-              placeholder="e.g. 20"
-              min="0"
-              max="100"
-            />
+      {!isDemo && (
+        <div className="card p-6">
+          <div className="section-title mb-4">Threshold Settings</div>
+          <div className="flex items-end gap-4">
+            <div>
+              <label className="text-xs text-text-muted font-mono block mb-1">Min Moisture %</label>
+              <input
+                type="number"
+                value={thresholdMin}
+                onChange={(e) => setThresholdMin(e.target.value)}
+                className="input !w-28"
+                placeholder="e.g. 20"
+                min="0"
+                max="100"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-text-muted font-mono block mb-1">Max Moisture %</label>
+              <input
+                type="number"
+                value={thresholdMax}
+                onChange={(e) => setThresholdMax(e.target.value)}
+                className="input !w-28"
+                placeholder="e.g. 80"
+                min="0"
+                max="100"
+              />
+            </div>
+            <button onClick={handleSaveThreshold} className="btn-primary">Save</button>
           </div>
-          <div>
-            <label className="text-xs text-text-muted font-mono block mb-1">Max Moisture %</label>
-            <input
-              type="number"
-              value={thresholdMax}
-              onChange={(e) => setThresholdMax(e.target.value)}
-              className="input !w-28"
-              placeholder="e.g. 80"
-              min="0"
-              max="100"
-            />
-          </div>
-          <button onClick={handleSaveThreshold} className="btn-primary">Save</button>
         </div>
-      </div>
+      )}
 
       {/* History Chart */}
       <div className="card p-6">
@@ -354,7 +369,7 @@ const PlantDetail: React.FC = () => {
       <div className="card p-6">
         <div className="flex items-center justify-between mb-3">
           <div className="section-title">Plant Notes</div>
-          {!editingNotes && (
+          {!isDemo && !editingNotes && (
             <button
               onClick={() => { setNotesDraft(plantNotes); setEditingNotes(true); }}
               className="text-xs text-accent hover:text-accent-dim font-medium"
@@ -363,7 +378,7 @@ const PlantDetail: React.FC = () => {
             </button>
           )}
         </div>
-        {editingNotes ? (
+        {editingNotes && !isDemo ? (
           <div>
             <textarea
               value={notesDraft}
@@ -388,14 +403,16 @@ const PlantDetail: React.FC = () => {
       <div className="card p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="section-title">Watering History</div>
-          <button
-            onClick={() => setShowWateringModal(true)}
-            className="text-xs text-accent hover:text-accent-dim font-medium"
-          >
-            Log Watering
-          </button>
+          {!isDemo && (
+            <button
+              onClick={() => setShowWateringModal(true)}
+              className="text-xs text-accent hover:text-accent-dim font-medium"
+            >
+              Log Watering
+            </button>
+          )}
         </div>
-        <WateringTimeline logs={wateringLogs} onDelete={handleDeleteWateringLog} />
+        <WateringTimeline logs={wateringLogs} onDelete={isDemo ? undefined : handleDeleteWateringLog} />
       </div>
 
       {/* Recent Alerts */}
@@ -445,38 +462,44 @@ const PlantDetail: React.FC = () => {
                 <span className="data-value">{sensor.calibration_wet}</span>
               </div>
             )}
-            <div className="flex justify-between py-2 border-b border-surface-border">
-              <div>
-                <span className="text-text-muted">Auto-detect watering</span>
-                <div className="text-[10px] text-text-muted mt-0.5">Log events when moisture spikes</div>
-              </div>
-              <button
-                onClick={handleToggleAutoLog}
-                className={`relative w-10 h-5 rounded-full transition-colors ${
-                  sensor.auto_log_watering ? 'bg-accent' : 'bg-canvas-200 border border-surface-border'
-                }`}
-              >
-                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                  sensor.auto_log_watering ? 'translate-x-5' : 'translate-x-0.5'
-                }`} />
-              </button>
-            </div>
-            <div className="pt-2">
-              <Link to="/sensors" className="text-xs text-accent hover:text-accent-dim">
-                Calibration Wizard &rarr;
-              </Link>
-            </div>
+            {!isDemo && (
+              <>
+                <div className="flex justify-between py-2 border-b border-surface-border">
+                  <div>
+                    <span className="text-text-muted">Auto-detect watering</span>
+                    <div className="text-[10px] text-text-muted mt-0.5">Log events when moisture spikes</div>
+                  </div>
+                  <button
+                    onClick={handleToggleAutoLog}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${
+                      sensor.auto_log_watering ? 'bg-accent' : 'bg-canvas-200 border border-surface-border'
+                    }`}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                      sensor.auto_log_watering ? 'translate-x-5' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+                <div className="pt-2">
+                  <Link to="/sensors" className="text-xs text-accent hover:text-accent-dim">
+                    Calibration Wizard &rarr;
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
 
       {/* Log Watering Modal */}
-      <LogWateringModal
-        sensorId={sensorId}
-        open={showWateringModal}
-        onClose={() => setShowWateringModal(false)}
-        onLogged={loadWateringLogs}
-      />
+      {!isDemo && (
+        <LogWateringModal
+          sensorId={sensorId}
+          open={showWateringModal}
+          onClose={() => setShowWateringModal(false)}
+          onLogged={loadWateringLogs}
+        />
+      )}
     </div>
   );
 };

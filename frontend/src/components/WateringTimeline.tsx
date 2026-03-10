@@ -3,7 +3,7 @@ import { WateringLog } from '../types';
 
 interface WateringTimelineProps {
   logs: WateringLog[];
-  onDelete: (id: number) => void;
+  onDelete?: (id: number) => void;
 }
 
 function getMethodBadge(method: string) {
@@ -61,13 +61,15 @@ const WateringTimeline: React.FC<WateringTimelineProps> = ({ logs, onDelete }) =
                 <p className="text-sm text-text-secondary mt-1">{log.notes}</p>
               )}
             </div>
-            <button
-              onClick={() => onDelete(log.id)}
-              className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-danger text-xs transition-opacity shrink-0"
-              title="Delete"
-            >
-              &times;
-            </button>
+            {onDelete && (
+              <button
+                onClick={() => onDelete(log.id)}
+                className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-danger text-xs transition-opacity shrink-0"
+                title="Delete"
+              >
+                &times;
+              </button>
+            )}
           </div>
         </div>
       ))}

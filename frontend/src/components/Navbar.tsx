@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { BellIcon, ComputerDesktopIcon, Bars3Icon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useAlerts } from '../context/AlertContext';
+import { useAuth } from '../context/AuthContext';
 import { useKiosk } from '../context/KioskContext';
 import { useMobileNav } from '../context/MobileNavContext';
 import { useTheme } from '../context/ThemeContext';
@@ -21,6 +22,7 @@ const pageTitles: Record<string, string> = {
 const Navbar: React.FC = () => {
   const location = useLocation();
   const { unreadCount, recentAlerts, refreshAlerts } = useAlerts();
+  const { isDemo } = useAuth();
   const { toggleKiosk } = useKiosk();
   const { setSidebarOpen } = useMobileNav();
   const { theme, toggleTheme } = useTheme();
@@ -115,7 +117,7 @@ const Navbar: React.FC = () => {
               <div className="absolute right-0 top-full mt-2 w-80 bg-surface border border-surface-border rounded-2xl shadow-card-hover z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
                   <span className="text-sm font-medium text-text">Alerts</span>
-                  {unreadCount > 0 && (
+                  {!isDemo && unreadCount > 0 && (
                     <button onClick={handleMarkAllRead} className="text-xs text-accent hover:text-accent-dim">
                       Mark all read
                     </button>
@@ -142,12 +144,14 @@ const Navbar: React.FC = () => {
                             >
                               View
                             </Link>
-                            <button
-                              onClick={() => handleDismiss(alert.id)}
-                              className="text-[11px] text-text-muted hover:text-text"
-                            >
-                              Dismiss
-                            </button>
+                            {!isDemo && (
+                              <button
+                                onClick={() => handleDismiss(alert.id)}
+                                className="text-[11px] text-text-muted hover:text-text"
+                              >
+                                Dismiss
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>

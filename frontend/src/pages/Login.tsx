@@ -6,7 +6,8 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [demoLoading, setDemoLoading] = useState(false);
+  const { login, loginDemo } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,6 +21,19 @@ const Login: React.FC = () => {
       setError('Invalid password');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDemo = async () => {
+    setError('');
+    setDemoLoading(true);
+    try {
+      await loginDemo();
+      navigate('/', { replace: true });
+    } catch {
+      setError('Failed to enter demo mode');
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -64,6 +78,20 @@ const Login: React.FC = () => {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-surface-border" />
+          <span className="text-xs text-text-muted font-mono">or</span>
+          <div className="flex-1 h-px bg-surface-border" />
+        </div>
+
+        <button
+          onClick={handleDemo}
+          disabled={demoLoading}
+          className="btn-secondary w-full"
+        >
+          {demoLoading ? 'Loading...' : 'Browse as Guest'}
+        </button>
       </div>
     </div>
   );

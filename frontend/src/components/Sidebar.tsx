@@ -22,7 +22,7 @@ interface MenuItem {
 const Sidebar: React.FC = () => {
   const location = useLocation();
   const { unreadCount } = useAlerts();
-  const { logout } = useAuth();
+  const { logout, isDemo } = useAuth();
   const { isMobile, sidebarOpen, setSidebarOpen } = useMobileNav();
 
   const primaryItems: MenuItem[] = [
@@ -95,25 +95,44 @@ const Sidebar: React.FC = () => {
       <nav className="flex-1 py-4 px-3 space-y-0.5">
         {primaryItems.map(renderItem)}
 
-        {/* Admin divider */}
-        <div className="pt-4 pb-2 px-3">
-          <div className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Admin</div>
-        </div>
-
-        {adminItems.map(renderItem)}
+        {!isDemo && (
+          <>
+            {/* Admin divider */}
+            <div className="pt-4 pb-2 px-3">
+              <div className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Admin</div>
+            </div>
+            {adminItems.map(renderItem)}
+          </>
+        )}
       </nav>
 
       {/* Footer */}
       <div className="px-5 py-4 border-t border-surface-border flex items-center justify-between">
-        <div className="text-[11px] text-text-muted font-mono">
-          v1.0 &middot; ESP32 Monitor
-        </div>
-        <button
-          onClick={logout}
-          className="text-[11px] text-text-muted hover:text-danger transition-colors font-mono"
-        >
-          Logout
-        </button>
+        {isDemo ? (
+          <>
+            <div className="text-[11px] text-soil font-mono font-medium">
+              Demo Mode
+            </div>
+            <button
+              onClick={logout}
+              className="text-[11px] text-text-muted hover:text-danger transition-colors font-mono"
+            >
+              Exit
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="text-[11px] text-text-muted font-mono">
+              v1.0 &middot; ESP32 Monitor
+            </div>
+            <button
+              onClick={logout}
+              className="text-[11px] text-text-muted hover:text-danger transition-colors font-mono"
+            >
+              Logout
+            </button>
+          </>
+        )}
       </div>
     </>
   );

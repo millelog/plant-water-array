@@ -7,7 +7,7 @@ from dependencies import get_db
 from typing import List
 import models
 import uuid
-from auth import get_current_user, get_current_user_or_api_key, verify_device_api_key
+from auth import UserInfo, get_current_user, get_current_user_or_api_key, verify_device_api_key, require_admin
 
 router = APIRouter(
     prefix="/devices",
@@ -16,7 +16,7 @@ router = APIRouter(
 
 
 @router.post("/", response_model=schemas.Device)
-async def create_device(device: schemas.DeviceCreate, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
+async def create_device(device: schemas.DeviceCreate, db: Session = Depends(get_db), _user: UserInfo = Depends(require_admin)):
     return crud.create_device(db=db, device=device)
 
 
@@ -63,7 +63,7 @@ async def register_device(device: schemas.DeviceRegister, db: Session = Depends(
 
 
 @router.patch("/{device_id}", response_model=schemas.Device)
-async def update_device(device_id: str, update: schemas.DeviceUpdate, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
+async def update_device(device_id: str, update: schemas.DeviceUpdate, db: Session = Depends(get_db), _user: UserInfo = Depends(require_admin)):
     device = crud.update_device(db, device_id, update)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -71,7 +71,7 @@ async def update_device(device_id: str, update: schemas.DeviceUpdate, db: Sessio
 
 
 @router.delete("/{device_id}")
-async def delete_device(device_id: str, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
+async def delete_device(device_id: str, db: Session = Depends(get_db), _user: UserInfo = Depends(require_admin)):
     deleted = crud.delete_device(db, device_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -79,13 +79,13 @@ async def delete_device(device_id: str, db: Session = Depends(get_db), _user: st
 
 
 @router.get("/", response_model=List[schemas.Device])
-async def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _user: str = Depends(get_current_user_or_api_key)):
-    devices = db.query(models.Device).offset(skip).limit(limit).all()
+async def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), user: UserInfo = Depends(get_current_user_or_api_key)):
+    devices = db.query(models.Device).filter(models.Device.is_demo == user.is_demo).offset(skip).limit(limit).all()
     return devices
 
 
 @router.get("/{device_id}", response_model=schemas.Device)
-async def get_device(device_id: str, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
+async def get_device(device_id: str, db: Session = Depends(get_db), user: UserInfo = Depends(get_current_user)):
     device = crud.get_device_by_device_id(db, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -93,11 +93,11 @@ async def get_device(device_id: str, db: Session = Depends(get_db), _user: str =
 
 
 @router.get("/{device_id}/heartbeats", response_model=List[schemas.HeartbeatLogEntry])
-async def get_heartbeat_history(device_id: str, limit: int = 50, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
+async def get_heartbeat_history(device_id: str, limit: int = 50, db: Session = Depends(get_db), user: UserInfo = Depends(get_current_user)):
     device = crud.get_device_by_device_id(db, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    return crud.get_heartbeat_logs(db, device_id, limit=limit)
+    return crud.get_heartbeat_logs(db, device_id, limit=limit, is_demo=user.is_demo)
 
 
 @router.post("/{device_id}/heartbeat", response_model=schemas.HeartbeatResponse)

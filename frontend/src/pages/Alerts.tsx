@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { getAlerts, markAlertAsRead } from '../api/api';
 import AlertCard from '../components/AlertCard';
 import { Alert } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 const Alerts: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const { isDemo } = useAuth();
 
   useEffect(() => {
     fetchAlerts();
@@ -36,7 +38,7 @@ const Alerts: React.FC = () => {
         <div className="space-y-1">
           {alerts.map((alert, i) => (
             <div key={alert.id} style={{ animationDelay: `${i * 40}ms` }} className="animate-slide-up">
-              <AlertCard alert={alert} onMarkAsRead={handleMarkAsRead} />
+              <AlertCard alert={alert} onMarkAsRead={isDemo ? undefined : handleMarkAsRead} />
             </div>
           ))}
         </div>

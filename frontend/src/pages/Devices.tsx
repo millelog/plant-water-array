@@ -5,6 +5,7 @@ import DataTable from '../components/DataTable';
 import DeviceSetupInstructions from '../components/DeviceSetupInstructions';
 import InlineEdit from '../components/InlineEdit';
 import { Device } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 function timeAgo(dateString: string): string {
   const now = new Date();
@@ -22,6 +23,7 @@ function timeAgo(dateString: string): string {
 const Devices: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [showInstructions, setShowInstructions] = useState(false);
+  const { isDemo } = useAuth();
 
   const fetchDevices = useCallback(async () => {
     const devicesData = await getDevices();
@@ -61,14 +63,18 @@ const Devices: React.FC = () => {
       accessor: 'name',
       Cell: ({ value }: { value: string }, row: Device) => (
         <div>
-          <InlineEdit
-            value={value}
-            onSave={async (newName) => {
-              await updateDevice(row.device_id, { name: newName });
-              fetchDevices();
-            }}
-            className="text-text font-medium"
-          />
+          {isDemo ? (
+            <div className="text-text font-medium">{value}</div>
+          ) : (
+            <InlineEdit
+              value={value}
+              onSave={async (newName) => {
+                await updateDevice(row.device_id, { name: newName });
+                fetchDevices();
+              }}
+              className="text-text font-medium"
+            />
+          )}
           <div className="text-xs text-text-muted font-mono">{row.device_id}</div>
         </div>
       ),
@@ -123,12 +129,14 @@ const Devices: React.FC = () => {
           >
             Sensors ({row.sensors.length})
           </Link>
-          <button
-            className="btn-danger text-xs py-1.5 px-3"
-            onClick={() => handleDeleteDevice(row.device_id, row.name)}
-          >
-            Delete
-          </button>
+          {!isDemo && (
+            <button
+              className="btn-danger text-xs py-1.5 px-3"
+              onClick={() => handleDeleteDevice(row.device_id, row.name)}
+            >
+              Delete
+            </button>
+          )}
         </div>
       ),
     },

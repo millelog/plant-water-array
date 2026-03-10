@@ -25,6 +25,7 @@ class Device(Base):
     last_seen = Column(DateTime, nullable=True)
     offline_notified = Column(Boolean, default=False)
     deploy_token = Column(String, nullable=True)
+    is_demo = Column(Boolean, default=False, index=True)
 
     sensors = relationship("Sensor", back_populates="device")
     heartbeat_logs = relationship("HeartbeatLog", back_populates="device")
@@ -38,6 +39,7 @@ class HeartbeatLog(Base):
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     ip_address = Column(String, nullable=True)
     firmware_version = Column(String, nullable=True)
+    is_demo = Column(Boolean, default=False, index=True)
 
     device = relationship("Device", back_populates="heartbeat_logs")
 
@@ -48,6 +50,7 @@ class Zone(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True)
     sort_order = Column(Integer, default=0)
+    is_demo = Column(Boolean, default=False, index=True)
 
     sensors = relationship("Sensor", back_populates="zone")
 
@@ -65,6 +68,7 @@ class Sensor(Base):
 
     notes = Column(String, nullable=True)
     auto_log_watering = Column(Boolean, default=False)
+    is_demo = Column(Boolean, default=False, index=True)
 
     device = relationship("Device", back_populates="sensors")
     zone = relationship("Zone", back_populates="sensors")
@@ -82,6 +86,7 @@ class Reading(Base):
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     moisture = Column(Float)
     raw_adc = Column(Float, nullable=True)
+    is_demo = Column(Boolean, default=False, index=True)
 
     sensor = relationship("Sensor", back_populates="readings")
     device = relationship("Device")
@@ -94,6 +99,7 @@ class Threshold(Base):
     sensor_id = Column(Integer, ForeignKey("sensors.id"), unique=True)
     min_moisture = Column(Float, nullable=True)
     max_moisture = Column(Float, nullable=True)
+    is_demo = Column(Boolean, default=False, index=True)
 
     sensor = relationship("Sensor", back_populates="threshold")
 
@@ -106,6 +112,7 @@ class Alert(Base):
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     message = Column(String)
     read = Column(Boolean, default=False)
+    is_demo = Column(Boolean, default=False, index=True)
 
     sensor = relationship("Sensor")
 
@@ -133,6 +140,7 @@ class WateringLog(Base):
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     notes = Column(String, nullable=True)
     method = Column(Enum(WateringMethod), default=WateringMethod.manual)
+    is_demo = Column(Boolean, default=False, index=True)
 
     sensor = relationship("Sensor", back_populates="watering_logs")
 
