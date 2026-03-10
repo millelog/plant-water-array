@@ -1,6 +1,7 @@
 import React from 'react';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 import { SparklinePoint } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface SparklineChartProps {
   data: SparklinePoint[];
@@ -8,6 +9,7 @@ interface SparklineChartProps {
 }
 
 const SparklineChart: React.FC<SparklineChartProps> = ({ data, height = 40 }) => {
+  const { chartColors } = useTheme();
   if (data.length < 2) return null;
 
   const values = data.map(d => d.moisture);
@@ -23,7 +25,7 @@ const SparklineChart: React.FC<SparklineChartProps> = ({ data, height = 40 }) =>
           <Line
             type="monotone"
             dataKey="moisture"
-            stroke="#34d399"
+            stroke={chartColors.accent}
             strokeWidth={1.5}
             dot={false}
           />

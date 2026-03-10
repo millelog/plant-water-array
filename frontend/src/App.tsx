@@ -6,11 +6,13 @@ import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
 import { AlertProvider } from './context/AlertContext';
 import { KioskProvider } from './context/KioskContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { MobileNavProvider } from './context/MobileNavContext';
 
 const App: React.FC = () => {
   return (
     <Router>
+      <ThemeProvider>
       <AlertProvider>
         <KioskProvider>
           <MobileNavProvider>
@@ -27,6 +29,7 @@ const App: React.FC = () => {
           </MobileNavProvider>
         </KioskProvider>
       </AlertProvider>
+      </ThemeProvider>
     </Router>
   );
 };

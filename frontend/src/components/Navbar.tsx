@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { BellIcon, ComputerDesktopIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { BellIcon, ComputerDesktopIcon, Bars3Icon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useAlerts } from '../context/AlertContext';
 import { useKiosk } from '../context/KioskContext';
 import { useMobileNav } from '../context/MobileNavContext';
+import { useTheme } from '../context/ThemeContext';
 import { markAlertAsRead, markAllAlertsRead } from '../api/api';
 import * as Toast from '@radix-ui/react-toast';
 
@@ -23,6 +24,7 @@ const Navbar: React.FC = () => {
   const { unreadCount, recentAlerts, refreshAlerts } = useAlerts();
   const { toggleKiosk } = useKiosk();
   const { setSidebarOpen } = useMobileNav();
+  const { theme, toggleTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -85,6 +87,15 @@ const Navbar: React.FC = () => {
             title="Kiosk Mode"
           >
             <ComputerDesktopIcon className="w-5 h-5" />
+          </button>
+
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-xl text-text-secondary hover:text-text hover:bg-canvas-200 transition-colors"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
           </button>
 
           {/* Alert bell */}

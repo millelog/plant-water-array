@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Sensor, Zone, CompareReadingsResponse } from '../types';
 import { getSensors, getZones, getCompareReadings } from '../api/api';
+import { useTheme } from '../context/ThemeContext';
 
 const COLORS = [
   '#34d399', '#3b82f6', '#d97706', '#f87171', '#a78bfa',
@@ -18,6 +19,7 @@ const Compare: React.FC = () => {
   const [compareData, setCompareData] = useState<CompareReadingsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [chartLoading, setChartLoading] = useState(false);
+  const { chartColors } = useTheme();
 
   useEffect(() => {
     const load = async () => {
@@ -139,13 +141,13 @@ const Compare: React.FC = () => {
         <div
           className="w-3 h-3 rounded-sm border flex-shrink-0 flex items-center justify-center"
           style={{
-            borderColor: checked && color ? color : 'rgba(148, 163, 184, 0.3)',
+            borderColor: checked && color ? color : chartColors.checkboxBorder,
             backgroundColor: checked && color ? color : 'transparent',
           }}
         >
           {checked && (
             <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-              <path d="M1.5 4L3 5.5L6.5 2" stroke="#0c1117" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M1.5 4L3 5.5L6.5 2" stroke={chartColors.canvas} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </div>
@@ -246,30 +248,30 @@ const Compare: React.FC = () => {
           <div className="w-full h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 12, right: 12, left: -10, bottom: 4 }}>
-                <CartesianGrid stroke="rgba(148, 163, 184, 0.06)" strokeDasharray="3 3" />
+                <CartesianGrid stroke={chartColors.gridStroke} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="timestamp"
-                  tick={{ fill: '#5c6f7e', fontSize: 11, fontFamily: 'Space Mono' }}
+                  tick={{ fill: chartColors.textMuted, fontSize: 11, fontFamily: 'Space Mono' }}
                   tickLine={false}
-                  axisLine={{ stroke: 'rgba(148, 163, 184, 0.1)' }}
+                  axisLine={{ stroke: chartColors.axisStroke }}
                   tickFormatter={formatTimestamp}
                   minTickGap={40}
                 />
                 <YAxis
-                  tick={{ fill: '#5c6f7e', fontSize: 11, fontFamily: 'Space Mono' }}
+                  tick={{ fill: chartColors.textMuted, fontSize: 11, fontFamily: 'Space Mono' }}
                   tickLine={false}
-                  axisLine={{ stroke: 'rgba(148, 163, 184, 0.1)' }}
+                  axisLine={{ stroke: chartColors.axisStroke }}
                   tickFormatter={(v) => `${v}%`}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#182028',
-                    border: '1px solid rgba(148, 163, 184, 0.15)',
+                    backgroundColor: chartColors.tooltipBg,
+                    border: `1px solid ${chartColors.tooltipBorder}`,
                     borderRadius: '12px',
-                    boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                    boxShadow: chartColors.tooltipShadow,
                     padding: '10px 14px',
                   }}
-                  labelStyle={{ color: '#8899a6', fontSize: 11, fontFamily: 'Space Mono', marginBottom: 4 }}
+                  labelStyle={{ color: chartColors.textSecondary, fontSize: 11, fontFamily: 'Space Mono', marginBottom: 4 }}
                   labelFormatter={formatTimestamp}
                   formatter={(value: number, name: string) => {
                     const sensorId = parseInt(name.replace('sensor_', ''));
@@ -293,7 +295,7 @@ const Compare: React.FC = () => {
                     strokeWidth={2}
                     dot={false}
                     connectNulls
-                    activeDot={{ r: 4, strokeWidth: 2, stroke: '#0c1117' }}
+                    activeDot={{ r: 4, strokeWidth: 2, stroke: chartColors.canvas }}
                   />
                 ))}
               </LineChart>

@@ -4,6 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { SensorSummary } from '../types';
 import { getCompareReadings } from '../api/api';
 import PlantCard from './PlantCard';
+import { useTheme } from '../context/ThemeContext';
 
 interface ZoneSectionProps {
   title: string;
@@ -18,6 +19,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = ({ title, sensors, sensorDbIds, 
   const [showChart, setShowChart] = useState(false);
   const [chartData, setChartData] = useState<{ timestamp: string; avg: number }[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
+  const { chartColors } = useTheme();
 
   useEffect(() => {
     if (!showChart || !sensorDbIds || sensorDbIds.length === 0) return;
@@ -107,45 +109,45 @@ const ZoneSection: React.FC<ZoneSectionProps> = ({ title, sensors, sensorDbIds, 
                 <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id={`zoneGrad-${title}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#34d399" stopOpacity={0.25} />
-                      <stop offset="100%" stopColor="#34d399" stopOpacity={0} />
+                      <stop offset="0%" stopColor={chartColors.accent} stopOpacity={chartColors.areaOpacity} />
+                      <stop offset="100%" stopColor={chartColors.accent} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="rgba(148, 163, 184, 0.06)" strokeDasharray="3 3" />
+                  <CartesianGrid stroke={chartColors.gridStroke} strokeDasharray="3 3" />
                   <XAxis
                     dataKey="timestamp"
-                    tick={{ fill: '#5c6f7e', fontSize: 10, fontFamily: 'Space Mono' }}
+                    tick={{ fill: chartColors.textMuted, fontSize: 10, fontFamily: 'Space Mono' }}
                     tickLine={false}
-                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.1)' }}
+                    axisLine={{ stroke: chartColors.axisStroke }}
                     tickFormatter={formatTime}
                     minTickGap={40}
                   />
                   <YAxis
-                    tick={{ fill: '#5c6f7e', fontSize: 10, fontFamily: 'Space Mono' }}
+                    tick={{ fill: chartColors.textMuted, fontSize: 10, fontFamily: 'Space Mono' }}
                     tickLine={false}
-                    axisLine={{ stroke: 'rgba(148, 163, 184, 0.1)' }}
+                    axisLine={{ stroke: chartColors.axisStroke }}
                     tickFormatter={(v) => `${v}%`}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#182028',
-                      border: '1px solid rgba(148, 163, 184, 0.15)',
+                      backgroundColor: chartColors.tooltipBg,
+                      border: `1px solid ${chartColors.tooltipBorder}`,
                       borderRadius: '12px',
-                      boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                      boxShadow: chartColors.tooltipShadow,
                       padding: '8px 12px',
                     }}
-                    labelStyle={{ color: '#8899a6', fontSize: 10, fontFamily: 'Space Mono', marginBottom: 2 }}
+                    labelStyle={{ color: chartColors.textSecondary, fontSize: 10, fontFamily: 'Space Mono', marginBottom: 2 }}
                     labelFormatter={formatTime}
                     formatter={(value: number) => [`${value.toFixed(1)}%`, 'Avg Moisture']}
                   />
                   <Area
                     type="monotone"
                     dataKey="avg"
-                    stroke="#34d399"
+                    stroke={chartColors.accent}
                     strokeWidth={2}
                     fill={`url(#zoneGrad-${title})`}
                     dot={false}
-                    activeDot={{ r: 4, fill: '#34d399', stroke: '#0c1117', strokeWidth: 2 }}
+                    activeDot={{ r: 4, fill: chartColors.accent, stroke: chartColors.canvas, strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>

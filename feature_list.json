@@ -341,19 +341,19 @@
           "id": "css-theme-variables",
           "category": "frontend",
           "description": "Refactor index.css to use CSS custom properties for all colors (--canvas-base, --surface-base, --text-primary, etc). Define :root (dark) and .light-theme class with light equivalents. Update all Tailwind config references.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "theme-context",
           "category": "frontend",
           "description": "Create ThemeContext with useTheme hook. Stores preference in localStorage. Applies .light-theme class to document root. Defaults to dark (matching current design).",
-          "passes": false
+          "passes": true
         },
         {
           "id": "theme-toggle-ui",
           "category": "frontend",
           "description": "Add sun/moon toggle button in navbar next to alert bell. Smooth transition between themes (CSS transition on background-color, color).",
-          "passes": false
+          "passes": true
         }
       ]
     }

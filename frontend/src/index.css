@@ -3,20 +3,88 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --canvas: 12 17 23;
+    --canvas-50: 17 25 32;
+    --canvas-100: 22 31 40;
+    --canvas-200: 28 39 50;
+    --canvas-300: 36 48 61;
+    --surface: 24 32 40;
+    --surface-hover: 30 42 52;
+    --surface-border: rgba(148, 163, 184, 0.10);
+    --surface-border-hover: rgba(148, 163, 184, 0.22);
+    --accent: 52 211 153;
+    --accent-dim: 16 185 129;
+    --accent-glow: rgba(52, 211, 153, 0.12);
+    --accent-glow-strong: rgba(52, 211, 153, 0.25);
+    --soil: 217 119 6;
+    --soil-dim: 180 83 9;
+    --soil-glow: rgba(217, 119, 6, 0.12);
+    --danger: 248 113 113;
+    --danger-dim: 239 68 68;
+    --danger-glow: rgba(248, 113, 113, 0.12);
+    --text: 232 237 243;
+    --text-secondary: 136 153 166;
+    --text-muted: 92 111 126;
+    --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.35);
+    --shadow-card-hover: 0 4px 24px rgba(0, 0, 0, 0.45);
+    --shadow-glow: 0 0 24px rgba(52, 211, 153, 0.08);
+    --shadow-glow-accent: 0 0 32px rgba(52, 211, 153, 0.15);
+    --danger-glow-shadow: 0 0 16px rgba(248, 113, 113, 0.06);
+    --scrollbar-thumb: rgba(148, 163, 184, 0.15);
+    --selection-bg: rgba(52, 211, 153, 0.3);
+    --selection-text: 232 237 243;
+    --topo-opacity: 0.025;
+  }
+
+  .light-theme {
+    --canvas: 248 250 251;
+    --canvas-50: 241 244 247;
+    --canvas-100: 235 238 242;
+    --canvas-200: 224 228 234;
+    --canvas-300: 207 213 220;
+    --surface: 255 255 255;
+    --surface-hover: 248 250 252;
+    --surface-border: rgba(15, 23, 42, 0.08);
+    --surface-border-hover: rgba(15, 23, 42, 0.15);
+    --accent: 16 185 129;
+    --accent-dim: 5 150 105;
+    --accent-glow: rgba(16, 185, 129, 0.10);
+    --accent-glow-strong: rgba(16, 185, 129, 0.20);
+    --soil: 180 83 9;
+    --soil-dim: 146 64 14;
+    --soil-glow: rgba(180, 83, 9, 0.08);
+    --danger: 220 38 38;
+    --danger-dim: 185 28 28;
+    --danger-glow: rgba(220, 38, 38, 0.08);
+    --text: 26 35 50;
+    --text-secondary: 82 97 112;
+    --text-muted: 136 153 166;
+    --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.06);
+    --shadow-card-hover: 0 4px 24px rgba(0, 0, 0, 0.09);
+    --shadow-glow: 0 0 24px rgba(16, 185, 129, 0.06);
+    --shadow-glow-accent: 0 0 32px rgba(16, 185, 129, 0.10);
+    --danger-glow-shadow: 0 0 16px rgba(220, 38, 38, 0.04);
+    --scrollbar-thumb: rgba(15, 23, 42, 0.12);
+    --selection-bg: rgba(16, 185, 129, 0.2);
+    --selection-text: 26 35 50;
+    --topo-opacity: 0.015;
+  }
+
   *,
   *::before,
   *::after {
     scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, 0.15) transparent;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
   }
 
   ::selection {
-    background: rgba(52, 211, 153, 0.3);
-    color: #e8edf3;
+    background: var(--selection-bg);
+    color: rgb(var(--selection-text));
   }
 
   body {
-    background: #0c1117;
+    background: rgb(var(--canvas));
     min-height: 100vh;
   }
 
@@ -27,29 +95,38 @@
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.025;
+    opacity: var(--topo-opacity);
     background-image:
       repeating-radial-gradient(
         ellipse at 20% 50%,
         transparent 0,
         transparent 28px,
-        rgba(52, 211, 153, 0.5) 28px,
-        rgba(52, 211, 153, 0.5) 29px
+        rgb(var(--accent) / 0.5) 28px,
+        rgb(var(--accent) / 0.5) 29px
       ),
       repeating-radial-gradient(
         ellipse at 80% 30%,
         transparent 0,
         transparent 36px,
-        rgba(52, 211, 153, 0.4) 36px,
-        rgba(52, 211, 153, 0.4) 37px
+        rgb(var(--accent) / 0.4) 36px,
+        rgb(var(--accent) / 0.4) 37px
       ),
       repeating-radial-gradient(
         ellipse at 50% 80%,
         transparent 0,
         transparent 22px,
-        rgba(52, 211, 153, 0.3) 22px,
-        rgba(52, 211, 153, 0.3) 23px
+        rgb(var(--accent) / 0.3) 22px,
+        rgb(var(--accent) / 0.3) 23px
       );
+  }
+
+  /* Theme transition */
+  body, .card, header, aside, nav {
+    transition: background-color 200ms ease, color 200ms ease,
+                border-color 200ms ease, box-shadow 200ms ease;
+  }
+  html.no-transition *, html.no-transition *::before, html.no-transition *::after {
+    transition: none !important;
   }
 }
 
@@ -83,7 +160,8 @@
     @apply inline-block w-2 h-2 rounded-full;
   }
   .status-dot--online {
-    @apply bg-accent shadow-[0_0_8px_rgba(52,211,153,0.5)];
+    @apply bg-accent;
+    box-shadow: 0 0 8px rgb(var(--accent) / 0.5);
     animation: statusPulse 2.5s ease-in-out infinite;
   }
   .status-dot--offline {
@@ -144,6 +222,6 @@
   }
   .moisture-bar-fill {
     @apply absolute inset-y-0 left-0 rounded-full transition-all duration-500;
-    background: linear-gradient(90deg, #d97706 0%, #10b981 40%, #34d399 100%);
+    background: linear-gradient(90deg, rgb(var(--soil)) 0%, rgb(var(--accent-dim)) 40%, rgb(var(--accent)) 100%);
   }
 }

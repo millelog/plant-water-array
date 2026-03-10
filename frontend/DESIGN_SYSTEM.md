@@ -9,7 +9,7 @@ This document defines the visual language, design tokens, and component patterns
 ### Core Principles
 
 1. **Data-forward** — sensor readings, device status, and alerts are the primary content. Present them prominently using monospaced numerals and color-coded values.
-2. **Dark & atmospheric** — deep slate backgrounds with subtle topographic texture. Cards and surfaces float with soft shadows rather than hard borders.
+2. **Dark & atmospheric** (default) — deep slate backgrounds with subtle topographic texture. Cards and surfaces float with soft shadows rather than hard borders. Light mode available via navbar toggle.
 3. **Organic accents** — emerald green primary accent evokes plant life. Amber/gold for warnings (soil/drought). Coral red for danger/alerts.
 4. **Restraint in motion** — animate on entry (fade-in, slide-up) and status indicators (pulse). Avoid gratuitous motion elsewhere.
 
@@ -228,6 +228,59 @@ Defined in `tailwind.config.js`:
 
 ---
 
+## Theming
+
+The design system supports both dark and light modes via CSS custom properties.
+
+### How It Works
+
+All colors are defined as CSS custom properties in `:root` (dark theme) and `.light-theme` (light theme override) in `index.css`. Tailwind references these variables, so all existing utility classes automatically adapt.
+
+- **Toggle**: Sun/moon button in navbar, visible on all screen sizes
+- **Persistence**: `localStorage.getItem('theme')` — defaults to `'dark'`
+- **Flash prevention**: Inline `<script>` in `index.html` applies theme class before first paint
+- **Transition**: 200ms ease on background-color, color, border-color, box-shadow
+
+### CSS Variable Format
+
+Solid colors use space-separated RGB triplets for Tailwind alpha modifier support:
+```css
+:root { --accent: 52 211 153; }
+/* Usage: bg-accent/20 → rgb(52 211 153 / 0.2) */
+```
+
+Pre-baked opacity colors use full `rgba()`:
+```css
+:root { --accent-glow: rgba(52, 211, 153, 0.12); }
+```
+
+### useTheme() Hook
+
+```tsx
+import { useTheme } from '@/context/ThemeContext';
+
+const { theme, toggleTheme, chartColors } = useTheme();
+```
+
+- `theme`: `'dark' | 'light'`
+- `toggleTheme()`: switches theme and persists to localStorage
+- `chartColors`: memoized color map for Recharts components (hex/rgba values)
+
+### Light Mode Palette
+
+| Token | Dark | Light |
+|-------|------|-------|
+| canvas | `#0c1117` | `#f8fafb` |
+| surface | `#182028` | `#ffffff` |
+| accent | `#34d399` | `#10b981` |
+| soil | `#d97706` | `#b45309` |
+| danger | `#f87171` | `#dc2626` |
+| text | `#e8edf3` | `#1a2332` |
+| text-secondary | `#8899a6` | `#526170` |
+| text-muted | `#5c6f7e` | `#8899a6` |
+
+---
+
 ## Charts (Recharts)
 
 The `SensorReadingsGraph` component uses an AreaChart with these conventions:
@@ -261,7 +314,7 @@ Custom SVG icons are used for:
 - Use `space-y-6` for page-level vertical rhythm
 
 **Don't:**
-- Use light/white backgrounds — everything is dark mode
+- Use hardcoded hex colors — use CSS variables and Tailwind tokens instead
 - Use generic fonts (Inter, Roboto, Arial) — use the three defined families
 - Add heavy animations or transitions beyond the defined set
 - Use raw `bg-gray-*` or `text-gray-*` — use the `canvas-*`, `surface-*`, and `text-*` tokens

@@ -13,7 +13,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onMarkAsRead }) => {
       className={`card p-4 mb-3 transition-all duration-200 ${
         alert.read
           ? 'opacity-60'
-          : 'border-danger/20 bg-danger-glow shadow-[0_0_16px_rgba(248,113,113,0.06)]'
+          : 'border-danger/20 bg-danger-glow shadow-glow-danger'
       }`}
     >
       <div className="flex items-start gap-3">

@@ -83,6 +83,15 @@ Completed Feature Groups
    - Compare added to sidebar navigation
    - Zone aggregate chart on dashboard (expandable average moisture per zone)
 
+10. Light/Dark Mode Toggle (priority 10) — DONE
+   - CSS custom properties for all colors (canvas, surface, accent, soil, danger, text, shadows)
+   - Light theme palette (.light-theme class override)
+   - ThemeContext with localStorage persistence and chart color maps
+   - Sun/moon toggle in navbar (all screen sizes)
+   - Flash prevention via inline script in index.html
+   - Chart components updated to use theme-aware colors
+   - Theme transition animations (200ms ease)
+   - DESIGN_SYSTEM.md updated with theming documentation
+
 Remaining Feature Groups
 ------------------------
-10. Light/Dark Mode Toggle (priority 10)

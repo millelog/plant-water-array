@@ -1,6 +1,7 @@
 import React from 'react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Line, ReferenceLine, ComposedChart } from 'recharts';
 import { Reading, AggregatedReadingPoint } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface SensorReadingsGraphProps {
   readings?: Reading[];
@@ -11,6 +12,8 @@ interface SensorReadingsGraphProps {
 }
 
 const SensorReadingsGraph: React.FC<SensorReadingsGraphProps> = ({ readings, aggregatedData, debugMode, calibrationDry, calibrationWet }) => {
+  const { chartColors } = useTheme();
+
   // Aggregated mode
   if (aggregatedData && aggregatedData.length > 0) {
     const data = aggregatedData.map(point => ({
@@ -31,37 +34,37 @@ const SensorReadingsGraph: React.FC<SensorReadingsGraphProps> = ({ readings, agg
           <AreaChart data={data} margin={{ top: 12, right: 12, left: -10, bottom: 4 }}>
             <defs>
               <linearGradient id="avgGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#34d399" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#34d399" stopOpacity={0} />
+                <stop offset="0%" stopColor={chartColors.accent} stopOpacity={chartColors.areaOpacity} />
+                <stop offset="100%" stopColor={chartColors.accent} stopOpacity={0} />
               </linearGradient>
               <linearGradient id="bandGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#34d399" stopOpacity={0.1} />
-                <stop offset="100%" stopColor="#34d399" stopOpacity={0.05} />
+                <stop offset="0%" stopColor={chartColors.accent} stopOpacity={chartColors.bandOpacityTop} />
+                <stop offset="100%" stopColor={chartColors.accent} stopOpacity={chartColors.bandOpacityBottom} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="rgba(148, 163, 184, 0.06)" strokeDasharray="3 3" />
+            <CartesianGrid stroke={chartColors.gridStroke} strokeDasharray="3 3" />
             <XAxis
               dataKey="period"
-              tick={{ fill: '#5c6f7e', fontSize: 11, fontFamily: 'Space Mono' }}
+              tick={{ fill: chartColors.textMuted, fontSize: 11, fontFamily: 'Space Mono' }}
               tickLine={false}
-              axisLine={{ stroke: 'rgba(148, 163, 184, 0.1)' }}
+              axisLine={{ stroke: chartColors.axisStroke }}
             />
             <YAxis
               domain={[minVal - padding, maxVal + padding]}
-              tick={{ fill: '#5c6f7e', fontSize: 11, fontFamily: 'Space Mono' }}
+              tick={{ fill: chartColors.textMuted, fontSize: 11, fontFamily: 'Space Mono' }}
               tickLine={false}
-              axisLine={{ stroke: 'rgba(148, 163, 184, 0.1)' }}
+              axisLine={{ stroke: chartColors.axisStroke }}
               tickFormatter={(v) => `${v.toFixed(0)}%`}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#182028',
-                border: '1px solid rgba(148, 163, 184, 0.15)',
+                backgroundColor: chartColors.tooltipBg,
+                border: `1px solid ${chartColors.tooltipBorder}`,
                 borderRadius: '12px',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                boxShadow: chartColors.tooltipShadow,
                 padding: '10px 14px',
               }}
-              labelStyle={{ color: '#8899a6', fontSize: 11, fontFamily: 'Space Mono', marginBottom: 4 }}
+              labelStyle={{ color: chartColors.textSecondary, fontSize: 11, fontFamily: 'Space Mono', marginBottom: 4 }}
               itemStyle={{ fontSize: 12, fontFamily: 'Space Mono' }}
               formatter={(value: number, name: string) => {
                 const labels: Record<string, string> = { avg: 'Avg', min: 'Min', max: 'Max' };
@@ -79,17 +82,17 @@ const SensorReadingsGraph: React.FC<SensorReadingsGraphProps> = ({ readings, agg
               type="monotone"
               dataKey="min"
               stroke="none"
-              fill="#0c1117"
+              fill={chartColors.canvas}
               dot={false}
             />
             <Area
               type="monotone"
               dataKey="avg"
-              stroke="#34d399"
+              stroke={chartColors.accent}
               strokeWidth={2}
               fill="url(#avgGradient)"
               dot={false}
-              activeDot={{ r: 5, fill: '#34d399', stroke: '#0c1117', strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: chartColors.accent, stroke: chartColors.canvas, strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -148,23 +151,23 @@ const SensorReadingsGraph: React.FC<SensorReadingsGraphProps> = ({ readings, agg
           >
             <defs>
               <linearGradient id="moistureGradientDebug" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#34d399" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#34d399" stopOpacity={0} />
+                <stop offset="0%" stopColor={chartColors.accent} stopOpacity={chartColors.areaOpacity} />
+                <stop offset="100%" stopColor={chartColors.accent} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="rgba(148, 163, 184, 0.06)" strokeDasharray="3 3" />
+            <CartesianGrid stroke={chartColors.gridStroke} strokeDasharray="3 3" />
             <XAxis
               dataKey="timestamp"
-              tick={{ fill: '#5c6f7e', fontSize: 11, fontFamily: 'Space Mono' }}
+              tick={{ fill: chartColors.textMuted, fontSize: 11, fontFamily: 'Space Mono' }}
               tickLine={false}
-              axisLine={{ stroke: 'rgba(148, 163, 184, 0.1)' }}
+              axisLine={{ stroke: chartColors.axisStroke }}
             />
             <YAxis
               yAxisId="moisture"
               domain={[minMoisture - padding, maxMoisture + padding]}
-              tick={{ fill: '#5c6f7e', fontSize: 11, fontFamily: 'Space Mono' }}
+              tick={{ fill: chartColors.textMuted, fontSize: 11, fontFamily: 'Space Mono' }}
               tickLine={false}
-              axisLine={{ stroke: 'rgba(148, 163, 184, 0.1)' }}
+              axisLine={{ stroke: chartColors.axisStroke }}
               tickFormatter={(v) => `${v.toFixed(0)}%`}
             />
             {hasAdcData && (
@@ -172,21 +175,21 @@ const SensorReadingsGraph: React.FC<SensorReadingsGraphProps> = ({ readings, agg
                 yAxisId="adc"
                 orientation="right"
                 domain={[minAdc - adcPadding, maxAdc + adcPadding]}
-                tick={{ fill: '#d97706', fontSize: 11, fontFamily: 'Space Mono' }}
+                tick={{ fill: chartColors.soil, fontSize: 11, fontFamily: 'Space Mono' }}
                 tickLine={false}
-                axisLine={{ stroke: 'rgba(217, 119, 6, 0.3)' }}
+                axisLine={{ stroke: chartColors.soilAxisStroke }}
                 tickFormatter={(v) => `${Math.round(v)}`}
               />
             )}
             <Tooltip
               contentStyle={{
-                backgroundColor: '#182028',
-                border: '1px solid rgba(148, 163, 184, 0.15)',
+                backgroundColor: chartColors.tooltipBg,
+                border: `1px solid ${chartColors.tooltipBorder}`,
                 borderRadius: '12px',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+                boxShadow: chartColors.tooltipShadow,
                 padding: '10px 14px',
               }}
-              labelStyle={{ color: '#8899a6', fontSize: 11, fontFamily: 'Space Mono', marginBottom: 4 }}
+              labelStyle={{ color: chartColors.textSecondary, fontSize: 11, fontFamily: 'Space Mono', marginBottom: 4 }}
               formatter={(value: number, name: string) => {
                 if (name === 'moisture') return [`${value.toFixed(2)}%`, 'Moisture'];
                 if (name === 'raw_adc') return [`${Math.round(value)}`, 'Raw ADC'];
@@ -197,10 +200,10 @@ const SensorReadingsGraph: React.FC<SensorReadingsGraphProps> = ({ readings, agg
               <ReferenceLine
                 yAxisId="adc"
                 y={calibrationDry}
-                stroke="#d97706"
+                stroke={chartColors.soil}
                 strokeDasharray="6 3"
                 strokeOpacity={0.5}
-                label={{ value: 'Dry', fill: '#d97706', fontSize: 10, position: 'right' }}
+                label={{ value: 'Dry', fill: chartColors.soil, fontSize: 10, position: 'right' }}
               />
             )}
             {calibrationWet !== undefined && hasAdcData && (
@@ -217,22 +220,22 @@ const SensorReadingsGraph: React.FC<SensorReadingsGraphProps> = ({ readings, agg
               yAxisId="moisture"
               type="monotone"
               dataKey="moisture"
-              stroke="#34d399"
+              stroke={chartColors.accent}
               strokeWidth={2}
               fill="url(#moistureGradientDebug)"
               dot={false}
-              activeDot={{ r: 5, fill: '#34d399', stroke: '#0c1117', strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: chartColors.accent, stroke: chartColors.canvas, strokeWidth: 2 }}
             />
             {hasAdcData && (
               <Line
                 yAxisId="adc"
                 type="monotone"
                 dataKey="raw_adc"
-                stroke="#d97706"
+                stroke={chartColors.soil}
                 strokeWidth={1.5}
                 strokeDasharray="4 2"
                 dot={false}
-                activeDot={{ r: 4, fill: '#d97706', stroke: '#0c1117', strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: chartColors.soil, stroke: chartColors.canvas, strokeWidth: 2 }}
               />
             )}
           </ComposedChart>
@@ -271,47 +274,47 @@ const SensorReadingsGraph: React.FC<SensorReadingsGraphProps> = ({ readings, agg
         >
           <defs>
             <linearGradient id="moistureGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#34d399" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#34d399" stopOpacity={0} />
+              <stop offset="0%" stopColor={chartColors.accent} stopOpacity={chartColors.areaOpacity} />
+              <stop offset="100%" stopColor={chartColors.accent} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke="rgba(148, 163, 184, 0.06)" strokeDasharray="3 3" />
+          <CartesianGrid stroke={chartColors.gridStroke} strokeDasharray="3 3" />
           <XAxis
             dataKey="timestamp"
-            tick={{ fill: '#5c6f7e', fontSize: 11, fontFamily: 'Space Mono' }}
+            tick={{ fill: chartColors.textMuted, fontSize: 11, fontFamily: 'Space Mono' }}
             tickLine={false}
-            axisLine={{ stroke: 'rgba(148, 163, 184, 0.1)' }}
+            axisLine={{ stroke: chartColors.axisStroke }}
           />
           <YAxis
             domain={[minMoisture - padding, maxMoisture + padding]}
-            tick={{ fill: '#5c6f7e', fontSize: 11, fontFamily: 'Space Mono' }}
+            tick={{ fill: chartColors.textMuted, fontSize: 11, fontFamily: 'Space Mono' }}
             tickLine={false}
-            axisLine={{ stroke: 'rgba(148, 163, 184, 0.1)' }}
+            axisLine={{ stroke: chartColors.axisStroke }}
             tickFormatter={(v) => `${v.toFixed(0)}%`}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#182028',
-              border: '1px solid rgba(148, 163, 184, 0.15)',
+              backgroundColor: chartColors.tooltipBg,
+              border: `1px solid ${chartColors.tooltipBorder}`,
               borderRadius: '12px',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
+              boxShadow: chartColors.tooltipShadow,
               padding: '10px 14px',
             }}
-            labelStyle={{ color: '#8899a6', fontSize: 11, fontFamily: 'Space Mono', marginBottom: 4 }}
-            itemStyle={{ color: '#34d399', fontSize: 13, fontFamily: 'Space Mono', fontWeight: 700 }}
+            labelStyle={{ color: chartColors.textSecondary, fontSize: 11, fontFamily: 'Space Mono', marginBottom: 4 }}
+            itemStyle={{ color: chartColors.accent, fontSize: 13, fontFamily: 'Space Mono', fontWeight: 700 }}
             formatter={(value: number) => [`${value.toFixed(2)}%`, 'Moisture']}
           />
           <Area
             type="monotone"
             dataKey="moisture"
-            stroke="#34d399"
+            stroke={chartColors.accent}
             strokeWidth={2}
             fill="url(#moistureGradient)"
             dot={false}
             activeDot={{
               r: 5,
-              fill: '#34d399',
-              stroke: '#0c1117',
+              fill: chartColors.accent,
+              stroke: chartColors.canvas,
               strokeWidth: 2,
             }}
           />
