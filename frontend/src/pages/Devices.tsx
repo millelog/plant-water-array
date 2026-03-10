@@ -8,7 +8,7 @@ import { Device } from '../types';
 
 function timeAgo(dateString: string): string {
   const now = new Date();
-  const date = new Date(dateString);
+  const date = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
@@ -47,7 +47,7 @@ const Devices: React.FC = () => {
       return { label: 'Provisioning', dotClass: 'status-dot--provisioning' };
     }
     const now = new Date();
-    const seen = new Date(lastSeen);
+    const seen = new Date(lastSeen.endsWith('Z') ? lastSeen : lastSeen + 'Z');
     const online = (now.getTime() - seen.getTime()) < 5 * 60 * 1000;
     if (online) {
       return { label: 'Online', dotClass: 'status-dot--online' };

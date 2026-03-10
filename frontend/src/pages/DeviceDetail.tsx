@@ -15,7 +15,7 @@ import { Sensor } from '../types';
 
 function timeAgo(dateString: string): string {
   const now = new Date();
-  const date = new Date(dateString);
+  const date = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
@@ -29,7 +29,8 @@ function timeAgo(dateString: string): string {
 function formatTimestamp(ts: string): string {
   try {
     const clean = ts.replace(/\.\d+/, '');
-    return new Date(clean).toLocaleString();
+    const utc = clean.endsWith('Z') ? clean : clean + 'Z';
+    return new Date(utc).toLocaleString();
   } catch {
     return ts;
   }
@@ -37,7 +38,7 @@ function formatTimestamp(ts: string): string {
 
 function getStatus(lastSeen?: string): { label: string; dotClass: string } {
   if (!lastSeen) return { label: 'Provisioning', dotClass: 'status-dot--provisioning' };
-  const online = (Date.now() - new Date(lastSeen).getTime()) < 5 * 60 * 1000;
+  const online = (Date.now() - new Date(lastSeen.endsWith('Z') ? lastSeen : lastSeen + 'Z').getTime()) < 5 * 60 * 1000;
   return online
     ? { label: 'Online', dotClass: 'status-dot--online' }
     : { label: 'Offline', dotClass: 'status-dot--offline' };
