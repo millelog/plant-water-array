@@ -6,21 +6,25 @@ services:
       - backend-data:/data
     environment:
       - DATABASE_URL=sqlite:////data/backend.db
-      - CORS_ORIGINS=${CORS_ORIGINS:-*}
-      - FIRMWARE_STORAGE_PATH=/data/firmware_storage
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://plants.loganmiller.dev}
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "8321:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ping')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_API_URL: ${VITE_API_URL:-https://api.plants.loganmiller.dev}
     restart: unless-stopped
-    ports:
-      - "${FRONTEND_PORT:-3000}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   backend-data:
