@@ -69,8 +69,11 @@ def collect_files():
     return files
 
 
-def get_devices(server_url):
-    resp = requests.get(f"{server_url}/devices/", timeout=10)
+def get_devices(server_url, api_key=None):
+    headers = {}
+    if api_key:
+        headers["X-API-Key"] = api_key
+    resp = requests.get(f"{server_url}/devices/", headers=headers, timeout=10)
     resp.raise_for_status()
     return resp.json()
 
@@ -112,7 +115,12 @@ def main():
     parser.add_argument("--port", type=int, default=DEFAULT_DEVICE_PORT, help=f"Device update server port (default: {DEFAULT_DEVICE_PORT})")
     parser.add_argument("--force", action="store_true", help="Proceed even with uncommitted changes")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be deployed without pushing")
+    parser.add_argument("--api-key", default=os.getenv("DEPLOY_API_KEY"), help="API key for backend authentication (default: DEPLOY_API_KEY env)")
     args = parser.parse_args()
+
+    if not args.api_key:
+        print("ERROR: DEPLOY_API_KEY env var or --api-key argument required.")
+        sys.exit(1)
 
     # Get git commit
     commit = get_git_commit()
@@ -143,7 +151,7 @@ def main():
     # Get device list from backend
     print(f"\nFetching devices from {args.server}...")
     try:
-        devices = get_devices(args.server)
+        devices = get_devices(args.server, args.api_key)
     except Exception as e:
         print(f"ERROR: Could not fetch devices: {e}")
         sys.exit(1)

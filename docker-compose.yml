@@ -7,6 +7,9 @@ services:
     environment:
       - DATABASE_URL=sqlite:////data/backend.db
       - CORS_ORIGINS=${CORS_ORIGINS:-https://plants.loganmiller.dev}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - DEPLOY_API_KEY=${DEPLOY_API_KEY}
+      - DEVICE_API_KEY=${DEVICE_API_KEY}
     ports:
       - "8321:8000"
     healthcheck:

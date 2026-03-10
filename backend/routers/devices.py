@@ -7,6 +7,7 @@ from dependencies import get_db
 from typing import List
 import models
 import uuid
+from auth import get_current_user, get_current_user_or_api_key, verify_device_api_key
 
 router = APIRouter(
     prefix="/devices",
@@ -15,12 +16,12 @@ router = APIRouter(
 
 
 @router.post("/", response_model=schemas.Device)
-async def create_device(device: schemas.DeviceCreate, db: Session = Depends(get_db)):
+async def create_device(device: schemas.DeviceCreate, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     return crud.create_device(db=db, device=device)
 
 
 @router.post("/register_device", response_model=schemas.Device)
-async def register_device(device: schemas.DeviceRegister, db: Session = Depends(get_db)):
+async def register_device(device: schemas.DeviceRegister, db: Session = Depends(get_db), _device: str = Depends(verify_device_api_key)):
     # If device_id provided, check by device_id first
     if device.device_id:
         existing_device = crud.get_device_by_device_id(db, device.device_id)
@@ -62,7 +63,7 @@ async def register_device(device: schemas.DeviceRegister, db: Session = Depends(
 
 
 @router.patch("/{device_id}", response_model=schemas.Device)
-async def update_device(device_id: str, update: schemas.DeviceUpdate, db: Session = Depends(get_db)):
+async def update_device(device_id: str, update: schemas.DeviceUpdate, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     device = crud.update_device(db, device_id, update)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -70,7 +71,7 @@ async def update_device(device_id: str, update: schemas.DeviceUpdate, db: Sessio
 
 
 @router.delete("/{device_id}")
-async def delete_device(device_id: str, db: Session = Depends(get_db)):
+async def delete_device(device_id: str, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     deleted = crud.delete_device(db, device_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -78,13 +79,13 @@ async def delete_device(device_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=List[schemas.Device])
-async def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+async def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _user: str = Depends(get_current_user_or_api_key)):
     devices = db.query(models.Device).offset(skip).limit(limit).all()
     return devices
 
 
 @router.get("/{device_id}", response_model=schemas.Device)
-async def get_device(device_id: str, db: Session = Depends(get_db)):
+async def get_device(device_id: str, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     device = crud.get_device_by_device_id(db, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -92,7 +93,7 @@ async def get_device(device_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{device_id}/heartbeats", response_model=List[schemas.HeartbeatLogEntry])
-async def get_heartbeat_history(device_id: str, limit: int = 50, db: Session = Depends(get_db)):
+async def get_heartbeat_history(device_id: str, limit: int = 50, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     device = crud.get_device_by_device_id(db, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -100,7 +101,7 @@ async def get_heartbeat_history(device_id: str, limit: int = 50, db: Session = D
 
 
 @router.post("/{device_id}/heartbeat", response_model=schemas.HeartbeatResponse)
-async def device_heartbeat(device_id: str, heartbeat: schemas.DeviceHeartbeat, db: Session = Depends(get_db)):
+async def device_heartbeat(device_id: str, heartbeat: schemas.DeviceHeartbeat, db: Session = Depends(get_db), _device: str = Depends(verify_device_api_key)):
     device = crud.update_device_heartbeat(db, device_id, heartbeat)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -108,5 +109,3 @@ async def device_heartbeat(device_id: str, heartbeat: schemas.DeviceHeartbeat, d
     crud.check_and_notify_offline_devices(db)
     config = crud.build_heartbeat_config(db, device_id)
     return config
-
-

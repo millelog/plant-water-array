@@ -5,8 +5,9 @@ from typing import Optional, List
 
 import crud, schemas
 from database import SessionLocal
+from auth import get_current_user
 
-router = APIRouter(prefix="/watering-logs", tags=["watering-logs"])
+router = APIRouter(prefix="/watering-logs", tags=["watering-logs"], dependencies=[Depends(get_current_user)])
 
 
 def get_db():

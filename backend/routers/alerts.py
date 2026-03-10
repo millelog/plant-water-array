@@ -5,10 +5,12 @@ from sqlalchemy.orm import Session
 import schemas, crud
 from dependencies import get_db
 from typing import List, Optional
+from auth import get_current_user
 
 router = APIRouter(
     prefix="/alerts",
     tags=["alerts"],
+    dependencies=[Depends(get_current_user)],
 )
 
 

@@ -10,6 +10,7 @@ from datetime import datetime
 import logging
 import csv
 import io
+from auth import get_current_user, verify_device_api_key
 
 router = APIRouter(
     tags=["readings"],
@@ -17,7 +18,7 @@ router = APIRouter(
 
 
 @router.post("/readings", response_model=schemas.Reading)
-async def create_reading(reading: schemas.ReadingCreate, db: Session = Depends(get_db)):
+async def create_reading(reading: schemas.ReadingCreate, db: Session = Depends(get_db), _device: str = Depends(verify_device_api_key)):
     logging.info(f"Creating reading: {reading}")
     db_device = crud.get_device_by_device_id(db, device_id=reading.device_id)
     if db_device is None:
@@ -27,7 +28,7 @@ async def create_reading(reading: schemas.ReadingCreate, db: Session = Depends(g
 
 
 @router.get("/readings", response_model=List[schemas.Reading])
-async def read_readings(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+async def read_readings(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     logging.info(f"Received request for readings: {request.url}")
     readings = crud.get_readings(db, skip=skip, limit=limit)
     return readings
@@ -39,6 +40,7 @@ async def export_readings_csv(
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
     db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
 ):
     sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
     if not sensor:
@@ -71,6 +73,7 @@ async def compare_readings(
     sensor_ids: str = Query(..., description="Comma-separated sensor DB IDs"),
     hours: int = Query(168, ge=1, le=8760, description="Time range in hours (default 7d, max 1yr)"),
     db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
 ):
     try:
         ids = [int(x.strip()) for x in sensor_ids.split(",") if x.strip()]
@@ -90,6 +93,7 @@ async def get_aggregated_readings(
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
     db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
 ):
     sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
     if not sensor:
@@ -110,7 +114,7 @@ async def get_aggregated_readings(
 
 
 @router.get("/readings/sensor/{sensor_id}/drying-rate", response_model=schemas.DryingRateResponse)
-async def get_drying_rate(sensor_id: int, db: Session = Depends(get_db)):
+async def get_drying_rate(sensor_id: int, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
     if not sensor:
         raise HTTPException(status_code=404, detail="Sensor not found")
@@ -120,7 +124,7 @@ async def get_drying_rate(sensor_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/readings/sensor/{sensor_id}", response_model=List[schemas.Reading])
-async def read_readings_by_sensor(request: Request, sensor_id: int, device_id: str, start_time: datetime = None, end_time: datetime = None, db: Session = Depends(get_db)):
+async def read_readings_by_sensor(request: Request, sensor_id: int, device_id: str, start_time: datetime = None, end_time: datetime = None, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     logging.info(f"Received request for readings by sensor: {request.url}")
     db_sensor = crud.get_sensor_by_sensor_id(db, device_id=device_id, sensor_id=sensor_id)
     if db_sensor is None:
@@ -137,7 +141,8 @@ async def read_readings_by_device_and_sensor(
     device_id: str,
     sensor_id: int,
     limit: int = Query(None, description="Limit the number of readings returned"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
 ):
     logging.info(f"Received request for readings by device and sensor: {request.url}")
     try:
@@ -162,6 +167,6 @@ async def read_readings_by_device_and_sensor(
 
 
 @router.delete("/readings/cleanup")
-async def cleanup_old_readings(older_than_days: int = Query(90, ge=1), db: Session = Depends(get_db)):
+async def cleanup_old_readings(older_than_days: int = Query(90, ge=1), db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     count = crud.delete_old_readings(db, older_than_days=older_than_days)
     return {"deleted": count, "older_than_days": older_than_days}

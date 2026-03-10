@@ -134,6 +134,9 @@ button:hover{background:#3d6b20}
 <p class="note">The address of your Plant Water Array server</p>
 <label>Device Name</label>
 <input type="text" name="device_name" value=\"""" + default_name + """" required>
+<label>Device API Key</label>
+<input type="text" name="device_api_key" placeholder="From server admin">
+<p class="note">Required for backend authentication</p>
 <button type="submit">Save &amp; Connect</button>
 </form>
 <script>
@@ -160,7 +163,7 @@ h1{color:#2d5016}.token{font-family:monospace;background:#f0f0f0;padding:4px 8px
 </body></html>"""
 
 
-def save_config(ssid, password, server_url, device_name):
+def save_config(ssid, password, server_url, device_name, device_api_key=""):
     import os
     deploy_token = ubinascii.hexlify(os.urandom(16)).decode()
     with open("config.py", "w") as f:
@@ -174,6 +177,7 @@ def save_config(ssid, password, server_url, device_name):
         f.write("SENSOR_PINS = [34]\n")
         f.write("ADC_DRY = 0\n")
         f.write("ADC_WET = 1500\n")
+        f.write('DEVICE_API_KEY = "' + device_api_key + '"\n')
     return deploy_token
 
 
@@ -217,9 +221,10 @@ def handle_http(sock, setup_page):
             password = params.get("password", "")
             server_url = params.get("server_url", "").rstrip("/")
             device_name = params.get("device_name", "PlantSensor")
+            device_api_key = params.get("device_api_key", "")
 
             if ssid and ssid != "__other__":
-                deploy_token = save_config(ssid, password, server_url, device_name)
+                deploy_token = save_config(ssid, password, server_url, device_name, device_api_key)
                 response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n" + success_page(deploy_token)
                 cl.send(response.encode())
                 cl.close()

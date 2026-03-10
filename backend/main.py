@@ -3,7 +3,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import devices, sensors, readings, alerts, zones, dashboard, config, watering_logs, admin
+from routers import auth, devices, sensors, readings, alerts, zones, dashboard, config, watering_logs, admin
 from database import init_db, upgrade_db
 import crud
 
@@ -23,6 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(devices.router)
 app.include_router(sensors.router)
 app.include_router(readings.router)

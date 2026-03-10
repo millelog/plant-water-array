@@ -6,6 +6,7 @@ import schemas, crud
 from dependencies import get_db
 from typing import List, Optional
 import models
+from auth import get_current_user, verify_device_api_key
 
 router = APIRouter(
     prefix="/sensors",
@@ -14,7 +15,7 @@ router = APIRouter(
 
 
 @router.post("/", response_model=schemas.Sensor)
-async def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db)):
+async def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db), _device: str = Depends(verify_device_api_key)):
     existing_sensor = crud.get_sensor_by_sensor_id(db, device_id=sensor.device_id, sensor_id=sensor.sensor_id)
     if existing_sensor:
         return existing_sensor
@@ -22,14 +23,14 @@ async def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_
 
 
 @router.get("/", response_model=List[schemas.Sensor])
-async def read_sensors(device_id: Optional[str] = None, db: Session = Depends(get_db)):
+async def read_sensors(device_id: Optional[str] = None, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     if device_id:
         return crud.get_sensors_by_device_id(db, device_id)
     return crud.get_sensors(db)
 
 
 @router.get("/health/batch", response_model=List[schemas.SensorHealthIndicator])
-async def get_all_sensor_health(db: Session = Depends(get_db)):
+async def get_all_sensor_health(db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     sys_config = crud.get_system_config(db)
     expected = sys_config.reading_interval
     sensors = crud.get_sensors(db)
@@ -41,7 +42,7 @@ async def get_all_sensor_health(db: Session = Depends(get_db)):
 
 
 @router.get("/{sensor_id}/health", response_model=schemas.SensorHealthIndicator)
-async def get_sensor_health(sensor_id: int, db: Session = Depends(get_db)):
+async def get_sensor_health(sensor_id: int, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
     if db_sensor is None:
         raise HTTPException(status_code=404, detail="Sensor not found")
@@ -50,7 +51,7 @@ async def get_sensor_health(sensor_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{sensor_id}/detail", response_model=schemas.Sensor)
-async def get_sensor_detail(sensor_id: int, db: Session = Depends(get_db)):
+async def get_sensor_detail(sensor_id: int, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     db_sensor = crud.get_sensor_by_db_id(db, sensor_id)
     if db_sensor is None:
         raise HTTPException(status_code=404, detail="Sensor not found")
@@ -58,7 +59,7 @@ async def get_sensor_detail(sensor_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{sensor_id}/threshold", response_model=schemas.Threshold)
-async def set_threshold(sensor_id: int, threshold: schemas.ThresholdCreate, db: Session = Depends(get_db)):
+async def set_threshold(sensor_id: int, threshold: schemas.ThresholdCreate, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
     if db_sensor is None:
         raise HTTPException(status_code=404, detail="Sensor not found")
@@ -66,7 +67,7 @@ async def set_threshold(sensor_id: int, threshold: schemas.ThresholdCreate, db: 
 
 
 @router.get("/{sensor_id}/threshold", response_model=schemas.Threshold)
-async def get_threshold(sensor_id: int, db: Session = Depends(get_db)):
+async def get_threshold(sensor_id: int, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
     if db_sensor is None:
         raise HTTPException(status_code=404, detail="Sensor not found")
@@ -77,7 +78,7 @@ async def get_threshold(sensor_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{sensor_id}", response_model=schemas.Sensor)
-async def update_sensor(sensor_id: int, sensor_update: schemas.SensorUpdate, db: Session = Depends(get_db)):
+async def update_sensor(sensor_id: int, sensor_update: schemas.SensorUpdate, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     updated_sensor = crud.update_sensor(db, sensor_id, sensor_update)
     if updated_sensor is None:
         raise HTTPException(status_code=404, detail="Sensor not found")
@@ -85,7 +86,7 @@ async def update_sensor(sensor_id: int, sensor_update: schemas.SensorUpdate, db:
 
 
 @router.post("/{sensor_id}/calibrate", response_model=schemas.Sensor)
-async def calibrate_sensor(sensor_id: int, calibration: schemas.CalibrationData, db: Session = Depends(get_db)):
+async def calibrate_sensor(sensor_id: int, calibration: schemas.CalibrationData, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     result = crud.set_sensor_calibration(db, sensor_id, calibration)
     if result is None:
         raise HTTPException(status_code=404, detail="Sensor not found")
@@ -93,7 +94,7 @@ async def calibrate_sensor(sensor_id: int, calibration: schemas.CalibrationData,
 
 
 @router.get("/{sensor_id}/latest-raw")
-async def get_latest_raw(sensor_id: int, db: Session = Depends(get_db)):
+async def get_latest_raw(sensor_id: int, db: Session = Depends(get_db), _user: str = Depends(get_current_user)):
     db_sensor = db.query(models.Sensor).filter(models.Sensor.id == sensor_id).first()
     if db_sensor is None:
         raise HTTPException(status_code=404, detail="Sensor not found")

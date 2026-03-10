@@ -93,7 +93,25 @@ def ensure_wifi():
     return sta_if.isconnected()
 
 
+def get_device_headers():
+    """Return auth headers for backend API calls."""
+    import config
+    key = getattr(config, 'DEVICE_API_KEY', None)
+    if key:
+        return {"X-Device-Key": key}
+    return {}
+
+
 def http_request(method, url, max_retries=3, **kwargs):
+    # Inject device auth headers if not already provided
+    headers = kwargs.pop("headers", {}) or {}
+    auth_headers = get_device_headers()
+    for k, v in auth_headers.items():
+        if k not in headers:
+            headers[k] = v
+    if headers:
+        kwargs["headers"] = headers
+
     for attempt in range(max_retries):
         try:
             if method == "GET":

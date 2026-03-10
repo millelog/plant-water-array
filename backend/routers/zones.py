@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 import schemas, crud
 from dependencies import get_db
 from typing import List
+from auth import get_current_user
 
 router = APIRouter(
     prefix="/zones",
     tags=["zones"],
+    dependencies=[Depends(get_current_user)],
 )
 
 
