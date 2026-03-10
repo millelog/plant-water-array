@@ -2,6 +2,8 @@
 
 Distributed plant moisture monitoring system with ESP32 sensors, a Python backend, and a React frontend. ESP32 devices self-register via captive portal WiFi provisioning and send periodic moisture readings. Code updates are pushed to devices over the LAN.
 
+**Live demo:** [plants.loganmiller.dev](https://plants.loganmiller.dev) — click **Browse as Guest** on the login page to explore the UI with sample data. Guest mode is read-only and uses demo data, not real sensor readings.
+
 ## Architecture
 
 ```
