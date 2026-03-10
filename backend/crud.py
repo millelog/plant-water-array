@@ -231,9 +231,11 @@ def get_readings_by_sensor(db: Session, device_id: str, sensor_db_id: int, start
         query = query.filter(models.Reading.timestamp >= start_time)
     if end_time:
         query = query.filter(models.Reading.timestamp <= end_time)
+    query = query.order_by(models.Reading.timestamp.desc())
     if limit is not None:
         query = query.limit(limit)
     readings = query.offset(skip).all()
+    readings.reverse()
     logging.info(f"Found {len(readings)} readings")
     return readings
 
