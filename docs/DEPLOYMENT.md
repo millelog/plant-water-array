@@ -5,7 +5,7 @@ The app runs on **gpu1** via Coolify (Docker Compose), with Traefik handling rev
 | Service | URL | Internal Port |
 |---------|-----|---------------|
 | Frontend | https://plants.loganmiller.dev | 80 (nginx) |
-| Backend API | https://api.plants.loganmiller.dev | 8000 (uvicorn) |
+| Backend API | https://plants-api.loganmiller.dev | 8000 (uvicorn) |
 | Backend LAN | http://192.168.70.100:8321 | 8000 (for ESP32 devices) |
 
 ## DNS

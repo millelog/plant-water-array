@@ -23,7 +23,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: ${VITE_API_URL:-https://api.plants.loganmiller.dev}
+        VITE_API_URL: ${VITE_API_URL:-https://plants-api.loganmiller.dev}
     restart: unless-stopped
     depends_on:
       backend:
